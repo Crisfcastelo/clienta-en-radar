@@ -1,33 +1,35 @@
 @import "tailwindcss";
 
 /*
- * Tokens de marca. Contrastes comprobados con la fórmula WCAG 2.2:
- * chocolate/crema 12,2:1 · chocolate-suave/crema 6,2:1 · blanco/oliva 6,8:1
- * terracota/crema 5,9:1 · dorado/crema 4,8:1 · borde-campo/blanco 4,1:1 (UI ≥ 3:1)
+ * Tokens de marca (estilo visual aprobado por Crisfcastelo). Contrastes WCAG 2.2 comprobados:
+ * chocolate/crema 13,2:1 · chocolate-suave/blanco 6,0:1 · blanco/bosque 10,2:1 · bosque/crema 9,0:1
+ * terracota/rosa 4,9:1 · dorado/arena 4,7:1 · gris-verde/salvia-gris 5,6:1 · borde-campo/blanco 3,2:1 (UI ≥ 3:1)
  * dorado-deco es solo decorativo: nunca para texto.
  */
 @theme {
-  --color-crema: #f7f1e7;
+  --color-crema: #f5f0e8;
   --color-superficie: #ffffff;
-  --color-neutro: #eee6da;
-  --color-borde: #e6dccd;
-  --color-borde-campo: #8c7a6b;
-  --color-chocolate: #3a2a21;
-  --color-chocolate-suave: #6a5546;
-  --color-oliva: #55602f;
-  --color-oliva-oscuro: #444d25;
-  --color-oliva-claro: #e8ebda;
-  --color-dorado: #8a6420;
-  --color-dorado-claro: #f5e9cf;
+  --color-neutro: #efe9e0;
+  --color-borde: #e8e0d4;
+  --color-borde-campo: #9a8f84;
+  --color-chocolate: #2a2622;
+  --color-chocolate-suave: #6b625a;
+  --color-bosque: #24483a;
+  --color-bosque-oscuro: #1a372c;
+  --color-salvia: #dce7de;
+  --color-salvia-gris: #e4e9e3;
+  --color-gris-verde: #4c5f55;
+  --color-dorado: #80601f;
+  --color-dorado-claro: #f2e6cf;
   --color-dorado-deco: #c29b4e;
-  --color-terracota: #a13a28;
-  --color-terracota-claro: #f6e1db;
+  --color-terracota: #a33f2b;
+  --color-terracota-claro: #f6ddd6;
 
   --font-sans: var(--font-texto), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-titulos), Georgia, "Times New Roman", serif;
 
   --radius-tarjeta: 1.25rem;
-  --shadow-suave: 0 1px 2px rgb(58 42 33 / 0.06), 0 4px 16px rgb(58 42 33 / 0.05);
+  --shadow-suave: 0 1px 2px rgb(42 38 34 / 0.04), 0 8px 24px rgb(42 38 34 / 0.06);
 }
 
 @layer base {
@@ -39,7 +41,13 @@
   }
 
   body {
+    /* Fondo cálido con luz suave, solo con CSS: nada que descargar ni que ralentice. */
     background-color: var(--color-crema);
+    background-image:
+      radial-gradient(40rem 30rem at 110% -5%, rgb(36 72 58 / 0.09), transparent 70%),
+      radial-gradient(36rem 28rem at -15% 35%, rgb(194 155 78 / 0.1), transparent 70%),
+      radial-gradient(40rem 30rem at 60% 110%, rgb(163 63 43 / 0.05), transparent 70%);
+    background-attachment: fixed;
     color: var(--color-chocolate);
     font-family: var(--font-sans);
     line-height: 1.5;
@@ -50,12 +58,14 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    line-height: 1.2;
+    font-weight: 450;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
     text-wrap: balance;
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-oliva);
+    outline: 3px solid var(--color-bosque);
     outline-offset: 2px;
   }
 
@@ -67,7 +77,7 @@
   }
 
   dialog::backdrop {
-    background: rgb(58 42 33 / 0.45);
+    background: rgb(42 38 34 / 0.4);
   }
 
   @media (prefers-reduced-motion: reduce) {

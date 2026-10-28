@@ -26,7 +26,7 @@ export default async function SettingsPage() {
       <PageHeader title="Ajustes" />
 
       <Card className="space-y-2 p-5">
-        <h2 className="text-xl font-semibold">Tu cuenta</h2>
+        <h2 className="text-xl">Tu cuenta</h2>
         <dl className="space-y-1">
           <div className="flex flex-wrap gap-x-2">
             <dt className="font-semibold">Nombre:</dt>
@@ -45,7 +45,7 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="space-y-3 p-5">
-        <h2 className="text-xl font-semibold">Tus datos</h2>
+        <h2 className="text-xl">Tus datos</h2>
         <p>Descarga todas tus consultas cuando quieras. Son tuyas.</p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <a href="/api/exportar?formato=csv" download className={buttonClasses({ variant: "secondary" })}>
@@ -64,7 +64,7 @@ export default async function SettingsPage() {
       </Card>
 
       <Card className="space-y-3 p-5">
-        <h2 className="text-xl font-semibold">Sesión</h2>
+        <h2 className="text-xl">Sesión</h2>
         <form action={signOutAction}>
           <Button type="submit" variant="secondary">
             <LogOut aria-hidden className="size-5" />
@@ -78,7 +78,7 @@ export default async function SettingsPage() {
 
       {DEMO_MODE ? (
         <Card className="space-y-3 border-dashed border-dorado p-5">
-          <h2 className="text-xl font-semibold">Solo en la versión de prueba</h2>
+          <h2 className="text-xl">Solo en la versión de prueba</h2>
           <p>Para revisar cómo se ve la app en distintos momentos.</p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <form action={resetDemoDataAction}>

@@ -1,4 +1,4 @@
-import { CalendarClock, CircleCheck, MessageCircle, Plus } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,49 +22,54 @@ export default async function TodayPage() {
   const nothingPending = summary.toReview.length === 0 && summary.toAnswer.length === 0;
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-2 pt-2">
+    <div className="space-y-7">
+      <header className="space-y-2">
         <p className="text-chocolate-suave">
           {greeting} · <span className="first-letter:uppercase">{formatLongDate(today)}</span>
         </p>
-        <h1 className="text-3xl font-semibold md:text-4xl">¿Qué tienes pendiente?</h1>
-        <p className="text-chocolate-suave">Aquí tienes las conversaciones que necesitan tu atención.</p>
+        <h1 className="text-4xl md:text-5xl">¿Qué tienes pendiente?</h1>
+        <p className="text-lg text-chocolate-suave">Aquí tienes las conversaciones que necesitan tu atención.</p>
+        <Flourish />
       </header>
 
-      {summary.hasAnyInquiry ? (
-        <section aria-label="Resumen" className="grid grid-cols-3 gap-2 sm:gap-3">
-          <Counter label="Por responder" value={summary.pendingCount} Icon={MessageCircle} tone="bg-dorado-claro" />
-          <Counter label="Para revisar" value={summary.reviewCount} Icon={CalendarClock} tone="bg-terracota-claro" />
-          <Counter
-            label="Resueltas esta semana"
-            value={summary.resolvedThisWeek}
-            Icon={CircleCheck}
-            tone="bg-oliva-claro"
-          />
-        </section>
-      ) : null}
-
-      <div className="md:hidden">
-        <ButtonLink href="/consultas/nueva" size="lg" full>
-          <Plus aria-hidden className="size-6" />
-          Añadir consulta
+      <section
+        aria-label="Resumen"
+        className="space-y-3 rounded-[1.75rem] border border-white/80 bg-superficie/55 p-3 shadow-(--shadow-suave) backdrop-blur-md"
+      >
+        {summary.hasAnyInquiry ? (
+          <div className="grid grid-cols-3 gap-2">
+            <Counter label="Por responder" value={summary.pendingCount} tone="bg-dorado-claro" number="text-dorado" />
+            <Counter
+              label="Para revisar"
+              value={summary.reviewCount}
+              tone="bg-terracota-claro"
+              number="text-terracota"
+            />
+            <Counter
+              label="Resueltas esta semana"
+              value={summary.resolvedThisWeek}
+              tone="bg-salvia"
+              number="text-bosque"
+            />
+          </div>
+        ) : null}
+        <ButtonLink href="/consultas/nueva" size="lg" full className="justify-between md:hidden">
+          <span className="inline-flex items-center gap-2">
+            <Plus aria-hidden className="size-6" />
+            Añadir consulta
+          </span>
+          <ArrowRight aria-hidden className="size-5" />
         </ButtonLink>
-      </div>
+      </section>
 
       {!summary.hasAnyInquiry ? (
         <Card className="space-y-3 p-6 text-center">
-          <h2 className="text-2xl font-semibold">{MESSAGES.welcome}</h2>
+          <h2 className="text-2xl">{MESSAGES.welcome}</h2>
           <p className="mx-auto max-w-md text-lg">{MESSAGES.firstSteps}</p>
-          <div className="hidden md:block">
-            <ButtonLink href="/consultas/nueva">
-              <Plus aria-hidden className="size-5" />
-              Añadir consulta
-            </ButtonLink>
-          </div>
         </Card>
       ) : nothingPending ? (
         <Card className="space-y-2 p-6 text-center">
-          <h2 className="text-2xl font-semibold">{MESSAGES.emptyTitle}</h2>
+          <h2 className="text-2xl">{MESSAGES.emptyTitle}</h2>
           <p className="text-chocolate-suave">{MESSAGES.emptyBody}</p>
         </Card>
       ) : (
@@ -74,6 +79,21 @@ export default async function TodayPage() {
         </>
       )}
     </div>
+  );
+}
+
+/** Trazo dorado decorativo bajo el subtítulo. */
+function Flourish() {
+  return (
+    <svg aria-hidden viewBox="0 0 120 12" className="h-3 w-28 text-dorado-deco">
+      <path
+        d="M2 8c14-6 26-6 38-2s24 4 38-1 26-5 40 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -93,7 +113,7 @@ function Section({
   if (items.length === 0) return null;
   return (
     <section aria-labelledby={id} className="space-y-3">
-      <h2 id={id} className="flex items-baseline gap-2 text-xl font-semibold">
+      <h2 id={id} className="flex items-baseline gap-2 text-2xl">
         {title}
         <span className="font-sans text-base font-normal text-chocolate-suave">({items.length})</span>
       </h2>
@@ -108,24 +128,11 @@ function Section({
   );
 }
 
-function Counter({
-  label,
-  value,
-  Icon,
-  tone,
-}: {
-  label: string;
-  value: number;
-  Icon: typeof CircleCheck;
-  tone: string;
-}) {
+function Counter({ label, value, tone, number }: { label: string; value: number; tone: string; number: string }) {
   return (
-    <div className={`flex flex-col justify-between rounded-(--radius-tarjeta) border border-borde p-3 sm:p-4 ${tone}`}>
-      <span className="flex items-start gap-1.5 text-sm leading-tight font-semibold">
-        <Icon aria-hidden className="mt-px size-4 shrink-0" />
-        {label}
-      </span>
-      <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">{value}</span>
+    <div className={`flex flex-col items-center justify-center rounded-2xl px-2 py-3 text-center ${tone}`}>
+      <span className={`font-display text-4xl leading-none ${number}`}>{value}</span>
+      <span className="mt-1.5 text-sm leading-tight font-semibold">{label}</span>
     </div>
   );
 }

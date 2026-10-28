@@ -201,12 +201,13 @@ test.describe("Todas tus consultas", () => {
   test("filtros de estado visibles", async ({ page }) => {
     await page.goto("/consultas");
     const chips = page.getByRole("navigation", { name: "Filtrar por estado" });
+    // Cada filtro muestra cuántas consultas hay en ese estado.
     await expect(chips.getByRole("link")).toHaveText([
-      "Todas",
-      "Por responder",
-      "Esperando respuesta",
-      "Seguimiento",
-      "Resueltas",
+      /^Todas\(?7\)?$/,
+      /^Por responder\(?2\)?$/,
+      /^Esperando respuesta\(?3\)?$/,
+      /^Seguimiento\(?1\)?$/,
+      /^Resueltas\(?1\)?$/,
     ]);
     await expect(chips.getByRole("link", { name: "Todas" })).toHaveAttribute("aria-current", "page");
 
@@ -219,9 +220,8 @@ test.describe("Todas tus consultas", () => {
     await expect(page.getByRole("link", { name: "Elena" })).toBeVisible();
   });
 
-  test("más filtros: canal, conservando el estado elegido", async ({ page }) => {
+  test("filtro de canal, conservando el estado elegido", async ({ page }) => {
     await page.goto("/consultas?estado=esperando_respuesta");
-    await page.getByText("Más filtros").click();
     await page.getByLabel("Canal").selectOption("email");
     await expect(page).toHaveURL(/estado=esperando_respuesta/);
     await expect(page).toHaveURL(/canal=email/);

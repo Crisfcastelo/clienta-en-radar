@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 export default function AppError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <Card role="alert" className="mx-auto max-w-xl space-y-4 p-6 text-center">
-      <h1 className="text-2xl font-semibold">Algo no ha ido bien</h1>
+      <h1 className="text-2xl">Algo no ha ido bien</h1>
       <p className="text-chocolate-suave">
         No hemos podido cargar esta pantalla. Tus consultas están a salvo. Prueba de nuevo en unos segundos.
       </p>

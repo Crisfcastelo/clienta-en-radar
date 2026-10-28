@@ -57,7 +57,7 @@ function StepWelcome() {
   return (
     <div className="flex flex-1 flex-col justify-center gap-6">
       <div className="space-y-3">
-        <h1 className="text-4xl font-semibold">{MESSAGES.welcome}</h1>
+        <h1 className="text-4xl">{MESSAGES.welcome}</h1>
         <p className="text-xl text-chocolate-suave">{MESSAGES.tagline}</p>
       </div>
       <div className="space-y-2">
@@ -75,7 +75,7 @@ async function StepFirstInquiries({ today }: { today: string }) {
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold">¿Quién te ha escrito?</h1>
+        <h1 className="text-3xl">¿Quién te ha escrito?</h1>
         <p className="text-lg">{MESSAGES.firstSteps}</p>
       </div>
       <Card className="p-5 sm:p-6">
@@ -101,7 +101,7 @@ function StepReady() {
   return (
     <div className="flex flex-1 flex-col justify-center gap-6">
       <div className="space-y-4 text-lg">
-        <h1 className="text-4xl font-semibold">Ya tienes tu radar preparado.</h1>
+        <h1 className="text-4xl">Ya tienes tu radar preparado.</h1>
         <p>Ahora sabes dónde consultar qué conversaciones tienes pendientes y cuáles necesitan seguimiento.</p>
         <p>No hace falta que lo tengas todo perfecto desde el primer día.</p>
         <p>

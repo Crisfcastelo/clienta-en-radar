@@ -110,3 +110,18 @@ export function startOfWeek(value: IsoDate): IsoDate {
   const weekday = new Date(isoToUtcMs(value)).getUTCDay(); // 0 = domingo
   return addDays(value, -((weekday + 6) % 7));
 }
+
+/** Hora corta de recepción para listas: "10:24" si es de hoy, "Ayer" o "25 oct". */
+export function formatReceivedShort(createdAt: string, timeZone: string, now: Date = new Date()): string {
+  const instant = new Date(createdAt);
+  const diff = daysBetween(toIsoDateIn(instant, timeZone), todayIn(timeZone, now));
+  if (diff <= 0) {
+    return new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(
+      instant,
+    );
+  }
+  if (diff === 1) return "Ayer";
+  return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone })
+    .format(instant)
+    .replace(/\./g, "");
+}

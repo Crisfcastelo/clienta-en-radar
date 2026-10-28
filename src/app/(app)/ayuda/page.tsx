@@ -77,7 +77,7 @@ export default async function HelpPage() {
       {savedCount < 3 ? <Notice tone="info">{MESSAGES.firstSteps}</Notice> : null}
 
       <section aria-labelledby="bienvenida" className="space-y-4">
-        <h2 id="bienvenida" className="text-2xl font-semibold">
+        <h2 id="bienvenida" className="text-2xl">
           Cómo funciona
         </h2>
         <ol className="space-y-3">
@@ -86,7 +86,7 @@ export default async function HelpPage() {
               <Card className="flex gap-4 p-5">
                 <span
                   aria-hidden
-                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-oliva font-display text-lg font-semibold text-white"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bosque font-display text-lg font-semibold text-white"
                 >
                   {index + 1}
                 </span>
@@ -101,7 +101,7 @@ export default async function HelpPage() {
       </section>
 
       <section aria-labelledby="instalar" className="space-y-4">
-        <h2 id="instalar" className="text-2xl font-semibold">
+        <h2 id="instalar" className="text-2xl">
           Tenla en la pantalla de inicio
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -135,7 +135,7 @@ export default async function HelpPage() {
       </section>
 
       <section aria-labelledby="preguntas" className="space-y-4">
-        <h2 id="preguntas" className="text-2xl font-semibold">
+        <h2 id="preguntas" className="text-2xl">
           Preguntas frecuentes
         </h2>
         <div className="space-y-2">
@@ -153,7 +153,7 @@ export default async function HelpPage() {
 
       {resources.length > 0 ? (
         <section aria-labelledby="recursos" className="space-y-4">
-          <h2 id="recursos" className="text-2xl font-semibold">
+          <h2 id="recursos" className="text-2xl">
             Recursos
           </h2>
           <ul className="space-y-3">

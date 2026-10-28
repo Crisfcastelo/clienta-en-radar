@@ -9,21 +9,21 @@ export const STATUS_ICONS: Record<InquiryStatus, typeof BellRing> = {
   resuelta: CircleCheck,
 };
 
-const STATUS_STYLES: Record<InquiryStatus, string> = {
-  por_responder: "bg-dorado-claro border-dorado/40",
-  esperando_respuesta: "bg-neutro border-borde-campo/40",
-  hacer_seguimiento: "bg-terracota-claro border-terracota/30",
-  resuelta: "bg-oliva-claro border-oliva/40",
+const STATUS_STYLES: Record<InquiryStatus, { pill: string; dot: string }> = {
+  por_responder: { pill: "bg-dorado-claro", dot: "bg-dorado-deco" },
+  esperando_respuesta: { pill: "bg-neutro", dot: "bg-chocolate-suave" },
+  hacer_seguimiento: { pill: "bg-terracota-claro", dot: "bg-terracota" },
+  resuelta: { pill: "bg-salvia", dot: "bg-bosque" },
 };
 
-/** Estado con icono y texto: nunca depende solo del color. */
+/** Estado como píldora con punto de color y texto: nunca depende solo del color. */
 export function StatusBadge({ status }: { status: InquiryStatus }) {
-  const Icon = STATUS_ICONS[status];
+  const { pill, dot } = STATUS_STYLES[status];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold text-chocolate ${STATUS_STYLES[status]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-semibold text-chocolate ${pill}`}
     >
-      <Icon aria-hidden className="size-4" />
+      <span aria-hidden className={`size-1.5 rounded-full ${dot}`} />
       {STATUS_LABELS[status]}
     </span>
   );

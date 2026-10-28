@@ -47,7 +47,7 @@ export function Dialog({ open, onClose, title, description, children }: Props) {
       <div className="pb-safe">
         <div className="flex items-start justify-between gap-4 px-6 pt-6">
           <div className="space-y-1">
-            <h2 id={titleId} className="text-xl font-semibold">
+            <h2 id={titleId} className="text-xl">
               {title}
             </h2>
             {description ? (

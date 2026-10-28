@@ -1,8 +1,7 @@
-import { Settings } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BottomNav, SideNav } from "@/components/app-nav";
-import { BrandName } from "@/components/brand";
+import { BrandMark, BrandName } from "@/components/brand";
 import { Toaster } from "@/components/toaster";
 import { DEMO_MODE } from "@/features/account/demo-profile";
 import { requireUser } from "@/features/account/session";
@@ -27,13 +26,17 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </p>
       ) : null}
 
-      <header className="flex items-center justify-between px-4 py-3 md:hidden">
+      <header className="flex items-center justify-between px-4 pt-3 md:hidden">
         <Link href="/hoy" className="rounded-full">
-          <BrandName />
+          <BrandMark className="size-10" />
+          <span className="sr-only">Clienta en Radar · Hoy</span>
         </Link>
-        <Link href="/ajustes" className="inline-flex size-12 items-center justify-center rounded-full hover:bg-neutro">
-          <Settings aria-hidden className="size-6" />
-          <span className="sr-only">Ajustes</span>
+        <Link
+          href="/ajustes"
+          className="inline-flex size-12 items-center justify-center rounded-full border border-white/80 bg-salvia font-display text-xl text-bosque shadow-(--shadow-suave)"
+        >
+          <span aria-hidden>{initial(user.displayName ?? user.email)}</span>
+          <span className="sr-only">Ajustes de tu cuenta</span>
         </Link>
       </header>
 
@@ -46,7 +49,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <SideNav />
           </div>
         </aside>
-        <main id="contenido" className="min-w-0 flex-1 pb-32 md:pb-12">
+        <main id="contenido" className="min-w-0 flex-1 pt-4 pb-32 md:pt-0 md:pb-12">
           {children}
         </main>
       </div>
@@ -55,4 +58,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <Toaster />
     </div>
   );
+}
+
+function initial(name: string): string {
+  return name.trim().charAt(0).toLocaleUpperCase("es-ES") || "·";
 }

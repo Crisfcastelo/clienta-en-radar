@@ -40,8 +40,8 @@ export function ChoiceChips({ name, legend, options, defaultValue, optional, err
             <span
               className={
                 "inline-flex min-h-12 items-center gap-2 rounded-full border border-borde-campo bg-superficie px-4 " +
-                "peer-checked:border-2 peer-checked:border-oliva peer-checked:bg-oliva-claro peer-checked:font-semibold " +
-                "peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-oliva"
+                "peer-checked:border-2 peer-checked:border-bosque peer-checked:bg-salvia peer-checked:font-semibold " +
+                "peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-bosque"
               }
             >
               {option.icon}

@@ -31,6 +31,17 @@ for (const { path, heading } of PAGES) {
   });
 }
 
+test("ninguna pantalla se desborda en horizontal (el móvil haría zoom)", async ({ page }) => {
+  for (const { path } of PAGES) {
+    await page.goto(path);
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth, path).toBeLessThanOrEqual(clientWidth);
+  }
+});
+
 test("la raíz lleva a Hoy", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/hoy$/);

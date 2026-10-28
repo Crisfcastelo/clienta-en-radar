@@ -12,7 +12,7 @@ export default function NoAccessPage() {
     <main className="pt-safe mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 px-4 py-10">
       <BrandName />
       <Card className="space-y-4 p-6">
-        <h1 className="text-2xl font-semibold">Este email todavía no tiene acceso</h1>
+        <h1 className="text-2xl">Este email todavía no tiene acceso</h1>
         <p>No encontramos ninguna compra de Clienta en Radar con el email con el que has entrado.</p>
         <ul className="list-disc space-y-1 pl-5 text-chocolate-suave">
           <li>Si pagaste con otro email, sal y entra con ese.</li>

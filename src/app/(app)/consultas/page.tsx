@@ -11,6 +11,8 @@ import { InquiryCard } from "@/features/inquiries/components/inquiry-card";
 import { inquiries } from "@/features/inquiries/data";
 import { filterInquiries, hasActiveFilters, parseFilters } from "@/features/inquiries/domain/filters";
 import { sortByNextAction } from "@/features/inquiries/domain/priority";
+import { INQUIRY_STATUSES } from "@/features/inquiries/domain/types";
+import type { InquiryStatus } from "@/features/inquiries/domain/types";
 import { todayIn } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Consultas" };
@@ -23,6 +25,13 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
   const all = await inquiries().list();
   const results = sortByNextAction(filterInquiries(all, filters, today, user.timezone), today);
   const filtered = hasActiveFilters(filters);
+  const sameOtherFilters = filterInquiries(all, { ...filters, status: null }, today, user.timezone);
+  const counts = {
+    todas: sameOtherFilters.length,
+    ...Object.fromEntries(
+      INQUIRY_STATUSES.map((status) => [status, sameOtherFilters.filter((i) => i.status === status).length]),
+    ),
+  } as Record<InquiryStatus | "todas", number>;
 
   return (
     <div>
@@ -45,7 +54,7 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
         </Notice>
       ) : null}
 
-      <FiltersForm key={JSON.stringify(filters)} filters={filters} />
+      <FiltersForm key={JSON.stringify(filters)} filters={filters} counts={counts} />
 
       <div className="mb-3 mt-6 flex flex-wrap items-baseline justify-between gap-2">
         <p role="status" className="font-semibold">
@@ -55,7 +64,7 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
         {filtered ? (
           <Link
             href="/consultas"
-            className="inline-flex min-h-11 items-center font-semibold text-oliva underline underline-offset-4"
+            className="inline-flex min-h-11 items-center font-semibold text-bosque underline underline-offset-4"
           >
             Quitar filtros
           </Link>

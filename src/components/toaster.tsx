@@ -43,7 +43,7 @@ export function Toaster() {
     >
       {visible ? (
         <div className="pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl bg-chocolate px-5 py-3.5 font-semibold text-white shadow-lg">
-          <CircleCheck aria-hidden className="size-5 shrink-0 text-oliva-claro" />
+          <CircleCheck aria-hidden className="size-5 shrink-0 text-salvia" />
           <span>{item.message}</span>
         </div>
       ) : null}

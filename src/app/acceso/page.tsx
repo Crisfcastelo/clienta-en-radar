@@ -15,7 +15,7 @@ export default function SignInPage() {
         <p className="font-display text-xl">{MESSAGES.tagline}</p>
       </div>
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold">Entra en tu cuenta</h1>
+        <h1 className="text-3xl">Entra en tu cuenta</h1>
         <p className="text-chocolate-suave">Sin contraseñas: te enviamos un código a tu email cada vez que entras.</p>
       </div>
       <Card className="p-5 sm:p-6">

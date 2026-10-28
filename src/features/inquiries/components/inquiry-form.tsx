@@ -9,11 +9,12 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { toast } from "@/components/toaster";
 import { newId } from "@/lib/ids";
 import type { FormState } from "../actions";
-import { CHANNEL_LABELS, STATUS_LABELS } from "../domain/labels";
-import { INQUIRY_CHANNELS, INQUIRY_STATUSES } from "../domain/types";
+import { MessageCircle, UserRound } from "lucide-react";
+import { STATUS_LABELS } from "../domain/labels";
+import { INQUIRY_STATUSES } from "../domain/types";
 import type { Inquiry } from "../domain/types";
 import { LIMITS } from "../schema";
-import { CHANNEL_ICONS } from "./channel-tag";
+import { ChannelPicker } from "./channel-picker";
 import { STATUS_ICONS } from "./status-badge";
 import { FollowUpInput } from "./follow-up-input";
 
@@ -28,7 +29,7 @@ type Props = {
 
 const initial: FormState = { status: "idle" };
 
-const FIELD_ORDER = ["customerLabel", "summary", "channel", "followUpOn", "notes", "status"] as const;
+const FIELD_ORDER = ["channel", "customerLabel", "summary", "status", "followUpOn", "notes"] as const;
 
 export function InquiryForm(props: Props) {
   const { mode, today, action, afterSave } = props;
@@ -84,6 +85,15 @@ export function InquiryForm(props: Props) {
 
       {mode === "create" ? <input type="hidden" name="id" value={formId} /> : null}
 
+      <div className="space-y-2">
+        <ChannelPicker
+          defaultValue={value("channel", inquiry?.channel)}
+          error={errors.channel}
+          errorId="channel-error"
+        />
+        {errors.channel ? <FieldError id="channel-error">{errors.channel}</FieldError> : null}
+      </div>
+
       <Field
         id="customerLabel"
         label="Nombre o referencia"
@@ -91,44 +101,34 @@ export function InquiryForm(props: Props) {
         error={errors.customerLabel}
       >
         {(aria) => (
-          <TextInput
-            {...aria}
-            name="customerLabel"
-            autoComplete="off"
-            maxLength={LIMITS.customerLabel}
-            defaultValue={value("customerLabel", inquiry?.customerLabel)}
-          />
+          <IconInput icon={<UserRound aria-hidden className="size-5" />}>
+            <TextInput
+              {...aria}
+              name="customerLabel"
+              autoComplete="off"
+              maxLength={LIMITS.customerLabel}
+              defaultValue={value("customerLabel", inquiry?.customerLabel)}
+              className="pl-11"
+            />
+          </IconInput>
         )}
       </Field>
 
       <Field id="summary" label="Qué necesita" hint={`${summaryLength}/${LIMITS.summary}`} error={errors.summary}>
         {(aria) => (
-          <TextArea
-            {...aria}
-            name="summary"
-            rows={3}
-            maxLength={LIMITS.summary}
-            defaultValue={value("summary", inquiry?.summary)}
-            onChange={(event) => setSummaryLength(event.target.value.length)}
-          />
+          <IconInput icon={<MessageCircle aria-hidden className="size-5" />} top>
+            <TextArea
+              {...aria}
+              name="summary"
+              rows={3}
+              maxLength={LIMITS.summary}
+              defaultValue={value("summary", inquiry?.summary)}
+              onChange={(event) => setSummaryLength(event.target.value.length)}
+              className="pl-11"
+            />
+          </IconInput>
         )}
       </Field>
-
-      <div className="space-y-2">
-        <ChoiceChips
-          name="channel"
-          legend="Canal"
-          optional
-          defaultValue={value("channel", inquiry?.channel)}
-          error={errors.channel}
-          errorId="channel-error"
-          options={INQUIRY_CHANNELS.map((channel) => {
-            const Icon = CHANNEL_ICONS[channel];
-            return { value: channel, label: CHANNEL_LABELS[channel], icon: <Icon aria-hidden className="size-4" /> };
-          })}
-        />
-        {errors.channel ? <FieldError id="channel-error">{errors.channel}</FieldError> : null}
-      </div>
 
       {isEdit ? (
         <div className="space-y-2">
@@ -197,5 +197,19 @@ export function InquiryForm(props: Props) {
         </SubmitButton>
       </div>
     </form>
+  );
+}
+
+/** Campo con icono decorativo a la izquierda, como en el diseño. */
+function IconInput({ icon, top = false, children }: { icon: ReactNode; top?: boolean; children: ReactNode }) {
+  return (
+    <div className="relative">
+      <span
+        className={`pointer-events-none absolute left-4 text-chocolate-suave ${top ? "top-3.5" : "top-1/2 -translate-y-1/2"}`}
+      >
+        {icon}
+      </span>
+      {children}
+    </div>
   );
 }

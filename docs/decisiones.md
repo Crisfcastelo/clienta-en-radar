@@ -83,3 +83,20 @@ Pendiente:
 
 Esquema SQL (`supabase/borrador`): sin `archived_at`; `retention_days` nulo por defecto; compra ligada al email con
 `purchaser_email` y `claim_entitlements()`. Prueba local: 52 de 52 comprobaciones correctas.
+
+## Estilo visual (mockup de Crisfcastelo)
+
+- Paleta: verde bosque `#24483A` como color principal, fondo crema con luz suave hecha solo con CSS, tarjetas blancas
+  translúcidas, rosa, arena y salvia para los indicadores. Todos los textos superan WCAG AA (comprobado).
+- Títulos en Fraunces más ligera y grande; texto en Atkinson Hyperlegible Next.
+- Filas de consulta con el icono del canal (WhatsApp e Instagram con sus logotipos, de Simple Icons, CC0), hora de
+  recepción, estado en píldora con punto y flecha al detalle. El punto rojo solo marca revisiones vencidas: nunca
+  "mensajes nuevos", porque la app no lee WhatsApp ni Instagram.
+- Barra inferior con cuatro destinos iguales (Hoy, Consultas, Añadir, Ayuda).
+- Añadir consulta: el canal arriba como cuatro mosaicos de un toque.
+- Del mockup **no** se ha tomado (pendiente de decidir): campo Categoría, campo «Próxima acción» en texto libre,
+  estado elegible al crear, nombre opcional, cuatro indicadores, fotos de clientas y los textos que difieren del
+  documento de contenido funcional. El logotipo «cfc» se pondrá cuando llegue el archivo.
+
+Los tres recursos que van dentro de la app son: los 25 mensajes editables (Responde sin pensar), la configuración
+guiada de WhatsApp (WhatsApp bajo control) y las secuencias de seguimiento (No dejes la conversación a medias).

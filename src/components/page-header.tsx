@@ -15,14 +15,16 @@ export function PageHeader({ title, intro, back, actions }: Props) {
       {back ? (
         <Link
           href={back.href}
-          className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-full px-2 font-semibold text-oliva hover:underline"
+          className="group -ml-1 inline-flex min-h-11 items-center gap-2 rounded-full pr-2 font-semibold text-bosque"
         >
-          <ArrowLeft aria-hidden className="size-5" />
+          <span className="flex size-10 items-center justify-center rounded-full border border-white/80 bg-superficie/90 shadow-(--shadow-suave) group-hover:bg-superficie">
+            <ArrowLeft aria-hidden className="size-5" />
+          </span>
           {back.label}
         </Link>
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-3xl font-semibold md:text-4xl">{title}</h1>
+        <h1 className="text-4xl md:text-5xl">{title}</h1>
         {actions}
       </div>
       {intro ? <div className="text-chocolate-suave">{intro}</div> : null}

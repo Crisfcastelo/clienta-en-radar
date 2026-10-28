@@ -74,7 +74,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
       </Card>
 
       <Card className="p-5 sm:p-6">
-        <h2 className="mb-4 text-xl font-semibold">Editar</h2>
+        <h2 className="mb-4 text-xl">Editar</h2>
         <InquiryForm mode="edit" inquiry={inquiry} today={today} action={action} />
       </Card>
 

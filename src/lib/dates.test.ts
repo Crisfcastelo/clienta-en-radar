@@ -5,6 +5,7 @@ import {
   daysBetween,
   formatFollowUp,
   formatReceived,
+  formatReceivedShort,
   isValidIsoDate,
   startOfWeek,
   todayIn,
@@ -65,6 +66,13 @@ describe("textos de fechas", () => {
     expect(formatReceived("2026-10-27T08:00:00Z", TZ, now)).toBe("ayer");
     expect(formatReceived("2026-10-25T08:00:00Z", TZ, now)).toBe("hace 3 días");
     expect(formatReceived("2026-10-12T08:00:00Z", TZ, now)).toBe("el 12 oct");
+  });
+
+  it("recepción corta para listas", () => {
+    const now = new Date("2026-10-28T10:00:00Z");
+    expect(formatReceivedShort("2026-10-28T08:24:00Z", TZ, now)).toBe("09:24");
+    expect(formatReceivedShort("2026-10-27T08:00:00Z", TZ, now)).toBe("Ayer");
+    expect(formatReceivedShort("2026-10-12T08:00:00Z", TZ, now)).toBe("12 oct");
   });
 
   it("parte del día para el saludo", () => {

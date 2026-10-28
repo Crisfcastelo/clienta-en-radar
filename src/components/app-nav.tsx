@@ -1,13 +1,14 @@
 "use client";
 
-import { CircleHelp, List, Plus, Settings, Sun } from "lucide-react";
+import { BookOpen, CirclePlus, House, MessagesSquare, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  { href: "/hoy", label: "Hoy", Icon: Sun },
-  { href: "/consultas", label: "Consultas", Icon: List },
-  { href: "/ayuda", label: "Ayuda", Icon: CircleHelp },
+  { href: "/hoy", label: "Hoy", Icon: House },
+  { href: "/consultas", label: "Consultas", Icon: MessagesSquare },
+  { href: "/consultas/nueva", label: "Añadir", Icon: CirclePlus },
+  { href: "/ayuda", label: "Ayuda", Icon: BookOpen },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -15,64 +16,46 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** Barra inferior en móvil. */
+/** Barra inferior en móvil: cuatro destinos con el mismo peso. */
 export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav
       aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-borde bg-superficie/95 pb-safe backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-white/70 bg-superficie/85 pb-safe shadow-[0_-8px_24px_rgb(42_38_34/0.05)] backdrop-blur-lg md:hidden"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end">
-        {ITEMS.slice(0, 2).map((item) => (
-          <NavItem key={item.href} {...item} active={isActive(pathname, item.href)} />
-        ))}
-        <li className="flex justify-center">
-          <Link
-            href="/consultas/nueva"
-            aria-current={pathname === "/consultas/nueva" ? "page" : undefined}
-            className="-mt-5 flex flex-col items-center gap-1 pb-2 text-xs font-semibold"
-          >
-            <span className="flex size-14 items-center justify-center rounded-full bg-oliva text-white shadow-lg ring-4 ring-crema">
-              <Plus aria-hidden className="size-7" />
-            </span>
-            Añadir
-          </Link>
-        </li>
-        {ITEMS.slice(2).map((item) => (
-          <NavItem key={item.href} {...item} active={isActive(pathname, item.href)} />
-        ))}
+      <ul className="mx-auto grid max-w-lg grid-cols-4">
+        {ITEMS.map(({ href, label, Icon }) => {
+          const active = isActive(pathname, href);
+          return (
+            <li key={href}>
+              <Link
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs ${active ? "font-bold text-bosque" : "text-chocolate-suave"}`}
+              >
+                <Icon aria-hidden className="size-6" strokeWidth={active ? 2.4 : 1.8} />
+                {label}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
-  );
-}
-
-function NavItem({ href, label, Icon, active }: { href: string; label: string; Icon: typeof Sun; active: boolean }) {
-  return (
-    <li>
-      <Link
-        href={href}
-        aria-current={active ? "page" : undefined}
-        className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs ${active ? "font-bold text-oliva" : "text-chocolate-suave"}`}
-      >
-        <Icon aria-hidden className="size-6" strokeWidth={active ? 2.5 : 2} />
-        {label}
-      </Link>
-    </li>
   );
 }
 
 /** Barra lateral en tablet y escritorio. */
 export function SideNav() {
   const pathname = usePathname();
-  const links = [...ITEMS, { href: "/ajustes", label: "Ajustes", Icon: Settings }];
+  const links = [ITEMS[0], ITEMS[1], ITEMS[3], { href: "/ajustes", label: "Ajustes", Icon: Settings }];
   return (
     <nav aria-label="Principal" className="hidden md:block">
       <Link
         href="/consultas/nueva"
-        className="mb-6 flex min-h-14 items-center justify-center gap-2 rounded-full bg-oliva px-5 text-lg font-semibold text-white hover:bg-oliva-oscuro"
+        className="mb-6 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-bosque px-5 text-lg font-semibold text-white shadow-[0_6px_16px_rgb(36_72_58/0.25)] hover:bg-bosque-oscuro"
       >
-        <Plus aria-hidden className="size-6" />
+        <CirclePlus aria-hidden className="size-6" />
         Añadir consulta
       </Link>
       <ul className="space-y-1">
@@ -83,7 +66,7 @@ export function SideNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 items-center gap-3 rounded-full px-4 ${active ? "bg-oliva-claro font-bold" : "hover:bg-neutro"}`}
+                className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 ${active ? "bg-superficie/90 font-bold text-bosque shadow-(--shadow-suave)" : "hover:bg-superficie/60"}`}
               >
                 <Icon aria-hidden className="size-5" />
                 {label}

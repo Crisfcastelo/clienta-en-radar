@@ -38,7 +38,7 @@ const PRESETS = [
 ] as const;
 
 const actionButton =
-  "relative z-10 inline-flex min-h-11 items-center gap-1.5 rounded-full text-sm font-semibold disabled:opacity-60";
+  "relative z-10 inline-flex min-h-10 items-center gap-1.5 rounded-full text-sm font-semibold disabled:opacity-60";
 
 /**
  * Acciones de un toque según el momento de la consulta. Solo "Preparar seguimiento"
@@ -65,9 +65,7 @@ export function QuickActions({ id, customerLabel, status, today }: Props) {
         {actions.map((name, index) => {
           const Icon = ICONS[name];
           const style =
-            index === 0
-              ? "border border-oliva bg-superficie px-3.5 text-oliva hover:bg-oliva-claro"
-              : "px-3 text-chocolate hover:bg-neutro";
+            index === 0 ? "bg-salvia px-3 text-bosque hover:bg-[#cfdfd3]" : "px-3 text-chocolate hover:bg-neutro";
           if (name === "prepare_follow_up") {
             return (
               <button
