@@ -12,6 +12,7 @@ export function makeInquiry(overrides: Partial<Inquiry> = {}): Inquiry {
     channel: "whatsapp",
     summary: "Pregunta por disponibilidad",
     notes: null,
+    nextAction: null,
     status: "por_responder",
     followUpOn: null,
     resolvedAt: null,

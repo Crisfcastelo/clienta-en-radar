@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BottomNav, SideNav } from "@/components/app-nav";
-import { BrandMark, BrandName } from "@/components/brand";
+import { BrandName } from "@/components/brand";
 import { Toaster } from "@/components/toaster";
 import { DEMO_MODE } from "@/features/account/demo-profile";
 import { requireUser } from "@/features/account/session";
@@ -26,11 +26,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </p>
       ) : null}
 
-      <header className="flex items-center justify-between px-4 pt-3 md:hidden">
-        <Link href="/hoy" className="rounded-full">
-          <BrandMark className="size-10" />
-          <span className="sr-only">Clienta en Radar · Hoy</span>
-        </Link>
+      <header className="flex items-center justify-end px-4 pt-3 md:hidden">
         <Link
           href="/ajustes"
           className="inline-flex size-12 items-center justify-center rounded-full border border-white/80 bg-salvia font-display text-xl text-bosque shadow-(--shadow-suave)"

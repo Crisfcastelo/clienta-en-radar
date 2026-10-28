@@ -119,10 +119,11 @@ $$;
 create table public.inquiries (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  customer_label text not null check (char_length(btrim(customer_label)) between 1 and 80),
+  customer_label text check (customer_label is null or char_length(btrim(customer_label)) between 1 and 80),
   channel        text check (channel in ('whatsapp', 'instagram', 'email', 'otro')),
   summary        text not null check (char_length(btrim(summary)) between 1 and 280),
   notes          text check (notes is null or char_length(notes) <= 2000),
+  next_action    text check (next_action is null or char_length(btrim(next_action)) between 1 and 120),
   status         text not null default 'por_responder'
                  check (status in ('por_responder', 'esperando_respuesta', 'hacer_seguimiento', 'resuelta')),
   follow_up_on   date,
@@ -490,7 +491,7 @@ create policy entitlements_select_own on public.entitlements
 -- inquiries: leer y borrar lo propio siempre (exportación/borrado RGPD);
 -- crear y editar solo con derecho activo
 grant select, insert, delete on public.inquiries to authenticated;
-grant update (customer_label, channel, summary, notes, status, follow_up_on) on public.inquiries to authenticated;
+grant update (customer_label, channel, summary, notes, next_action, status, follow_up_on) on public.inquiries to authenticated;
 
 create policy inquiries_select_own on public.inquiries
   for select to authenticated using (user_id = (select auth.uid()));

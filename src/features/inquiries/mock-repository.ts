@@ -28,13 +28,14 @@ function daysAgo(days: number, hour = 10): string {
 
 function seed(): Map<string, Inquiry> {
   const today = todayIn(DEMO_PROFILE.timezone);
-  const rows: Array<Omit<Inquiry, "updatedAt" | "resolvedAt">> = [
+  const rows: Array<Omit<Inquiry, "updatedAt" | "resolvedAt" | "nextAction"> & { nextAction?: string }> = [
     {
       id: "0b8f6a52-1f43-4c55-9b0e-6d7c1a2e3f01",
       customerLabel: "Lucía (vestido de novia)",
       channel: "instagram",
       summary: "Pregunta si hago arreglos de vestidos de novia y cuánto tardo.",
       notes: "Boda en marzo. Le interesa también el velo.",
+      nextAction: "Enviar precio del arreglo",
       status: "hacer_seguimiento",
       followUpOn: addDays(today, -3),
       createdAt: daysAgo(9),
@@ -55,6 +56,7 @@ function seed(): Map<string, Inquiry> {
       channel: "email",
       summary: "Pide presupuesto para 40 cajas regalo de empresa.",
       notes: "Necesitan factura con CIF.",
+      nextAction: "Enviar presupuesto",
       status: "esperando_respuesta",
       followUpOn: today,
       createdAt: daysAgo(5),
@@ -105,6 +107,7 @@ function seed(): Map<string, Inquiry> {
     rows.map((row) => {
       const inquiry: Inquiry = {
         ...row,
+        nextAction: row.nextAction ?? null,
         // Resuelta hace un rato: cuenta en "Resueltas esta semana" sea el día que sea.
         resolvedAt: row.status === "resuelta" ? new Date(Date.now() - 3_600_000).toISOString() : null,
         updatedAt: row.createdAt,
@@ -139,8 +142,7 @@ export const mockInquiryRepository: InquiryRepository = {
     const now = new Date().toISOString();
     const inquiry: Inquiry = {
       ...input,
-      status: "por_responder",
-      resolvedAt: null,
+      resolvedAt: input.status === "resuelta" ? now : null,
       createdAt: now,
       updatedAt: now,
     };

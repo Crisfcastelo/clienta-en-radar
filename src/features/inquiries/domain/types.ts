@@ -11,10 +11,13 @@ export type IsoDate = string;
 
 export interface Inquiry {
   id: string;
-  customerLabel: string;
+  /** Opcional: si no se pone, se muestra "Sin nombre". */
+  customerLabel: string | null;
   channel: InquiryChannel | null;
   summary: string;
   notes: string | null;
+  /** Opcional: qué toca hacer después, en texto libre ("Enviar presupuesto"). */
+  nextAction: string | null;
   status: InquiryStatus;
   followUpOn: IsoDate | null;
   resolvedAt: string | null;

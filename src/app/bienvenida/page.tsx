@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { BrandMark } from "@/components/brand";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { completeOnboardingAction } from "@/features/account/actions";
@@ -31,10 +30,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/bienveni
           Versión de prueba con datos ficticios.
         </p>
       ) : null}
-      <div className="flex items-center justify-between">
-        <BrandMark className="size-10" />
-        <p className="text-sm font-semibold text-chocolate-suave">Paso {step} de 3</p>
-      </div>
+      <p className="text-sm font-semibold text-chocolate-suave">Paso {step} de 3</p>
 
       {step === 1 ? <StepWelcome /> : null}
       {step === 2 ? <StepFirstInquiries today={todayIn(user.timezone)} /> : null}

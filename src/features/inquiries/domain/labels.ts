@@ -1,4 +1,4 @@
-import type { InquiryChannel, InquiryStatus } from "./types";
+import type { Inquiry, InquiryChannel, InquiryStatus } from "./types";
 
 export const STATUS_LABELS: Record<InquiryStatus, string> = {
   por_responder: "Por responder",
@@ -13,6 +13,20 @@ export const CHANNEL_LABELS: Record<InquiryChannel, string> = {
   email: "Email",
   otro: "Otro",
 };
+
+/** Nombre para mostrar: el nombre es opcional al apuntar una consulta. */
+export function displayName(inquiry: Pick<Inquiry, "customerLabel">): string {
+  return inquiry.customerLabel ?? "Sin nombre";
+}
+
+/** Atajos para "Próxima acción". Rellenan el campo; se pueden editar o escribir otra cosa. */
+export const NEXT_ACTION_SUGGESTIONS = [
+  "Responder",
+  "Enviar precio",
+  "Enviar presupuesto",
+  "Confirmar cita",
+  "Pedir más datos",
+] as const;
 
 /** Textos definitivos de docs/contenido-funcional.md. No cambiar sin revisarlo con Crisfcastelo. */
 export const MESSAGES = {

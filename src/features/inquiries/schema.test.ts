@@ -8,37 +8,52 @@ function create(input: Record<string, unknown>) {
 }
 
 describe("createInquirySchema", () => {
-  it("acepta lo mínimo: nombre y descripción", () => {
-    const result = create({});
+  it("acepta lo mínimo: solo qué necesita; empieza en Por responder", () => {
+    const result = createInquirySchema.safeParse({ id: VALID_ID, summary: "Precio" });
     expect(result.success).toBe(true);
     expect(result.data).toEqual({
       id: VALID_ID,
-      customerLabel: "Lucía",
+      customerLabel: null,
       summary: "Precio",
       channel: null,
       notes: null,
+      nextAction: null,
       followUpOn: null,
+      status: "por_responder",
     });
   });
 
   it("recorta espacios y convierte opcionales vacíos en null", () => {
-    const result = create({ customerLabel: "  Lucía  ", channel: "", notes: "   ", followUpOn: "" });
-    expect(result.data).toMatchObject({ customerLabel: "Lucía", channel: null, notes: null, followUpOn: null });
-  });
-
-  it("rechaza nombre o descripción vacíos con mensajes claros", () => {
-    const result = create({ customerLabel: "   ", summary: "" });
-    expect(result.success).toBe(false);
-    expect(toFieldErrors(result.error!)).toEqual({
-      customerLabel: "Escribe un nombre o una referencia.",
-      summary: "Cuenta en pocas palabras qué necesita.",
+    const result = create({ customerLabel: "  Lucía  ", channel: "", notes: "   ", nextAction: " ", followUpOn: "" });
+    expect(result.data).toMatchObject({
+      customerLabel: "Lucía",
+      channel: null,
+      notes: null,
+      nextAction: null,
+      followUpOn: null,
     });
   });
 
-  it("rechaza campos ausentes (formulario manipulado)", () => {
+  it("permite elegir el estado al crear", () => {
+    expect(create({ status: "esperando_respuesta" }).data?.status).toBe("esperando_respuesta");
+    expect(create({ status: "inventado" }).success).toBe(false);
+  });
+
+  it("guarda la próxima acción en texto libre", () => {
+    expect(create({ nextAction: "  Enviar presupuesto " }).data?.nextAction).toBe("Enviar presupuesto");
+    expect(create({ nextAction: "a".repeat(121) }).success).toBe(false);
+  });
+
+  it("rechaza una descripción vacía con un mensaje claro", () => {
+    const result = create({ customerLabel: "   ", summary: "" });
+    expect(result.success).toBe(false);
+    expect(toFieldErrors(result.error!)).toEqual({ summary: "Cuenta en pocas palabras qué necesita." });
+  });
+
+  it("rechaza campos obligatorios ausentes (formulario manipulado)", () => {
     const result = createInquirySchema.safeParse({ id: VALID_ID });
     expect(result.success).toBe(false);
-    expect(Object.keys(toFieldErrors(result.error!))).toEqual(["customerLabel", "summary"]);
+    expect(Object.keys(toFieldErrors(result.error!))).toEqual(["summary"]);
   });
 
   it("limita longitudes", () => {

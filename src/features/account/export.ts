@@ -5,11 +5,12 @@ import type { Inquiry } from "@/features/inquiries/domain/types";
 export const UTF8_BOM = String.fromCharCode(0xfeff);
 
 const CSV_COLUMNS: Array<[string, (i: Inquiry) => string]> = [
-  ["Nombre o referencia", (i) => i.customerLabel],
+  ["Nombre o referencia", (i) => i.customerLabel ?? ""],
   ["Canal", (i) => (i.channel ? CHANNEL_LABELS[i.channel] : "")],
   ["Descripción", (i) => i.summary],
   ["Notas", (i) => i.notes ?? ""],
   ["Estado", (i) => STATUS_LABELS[i.status]],
+  ["Próxima acción", (i) => i.nextAction ?? ""],
   ["Fecha de seguimiento", (i) => i.followUpOn ?? ""],
   ["Creada", (i) => i.createdAt],
   ["Actualizada", (i) => i.updatedAt],

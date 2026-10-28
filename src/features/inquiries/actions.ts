@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/features/account/session";
 import { inquiries } from "./data";
 import { formatFollowUp, todayIn } from "@/lib/dates";
-import { MESSAGES } from "./domain/labels";
+import { MESSAGES, displayName } from "./domain/labels";
 import { applyAction } from "./domain/transitions";
 import type { InquiryAction } from "./domain/transitions";
 import {
@@ -25,7 +25,7 @@ export type FormState =
 
 export type ActionState = { status: "idle" } | { status: "error" | "success"; message: string };
 
-const FIELD_KEYS = ["customerLabel", "summary", "channel", "notes", "followUpOn"] as const;
+const FIELD_KEYS = ["customerLabel", "summary", "channel", "notes", "nextAction", "followUpOn", "status"] as const;
 const NOT_FOUND = "No encontramos esta consulta. Puede que la hayas eliminado.";
 const GENERIC_ERROR = "No se pudo guardar. Inténtalo de nuevo en unos segundos.";
 
@@ -70,7 +70,7 @@ export async function createInquiryAction(_prev: FormState, formData: FormData):
 
 export async function updateInquiryAction(id: string, _prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
-  const keys = [...FIELD_KEYS, "status"] as const;
+  const keys = FIELD_KEYS;
   const parsedId = idSchema.safeParse({ id });
   const parsed = updateInquirySchema.safeParse(formDataToRecord(formData, keys));
   if (!parsedId.success || !parsed.success) {
@@ -105,7 +105,7 @@ export async function inquiryAction(_prev: ActionState, formData: FormData): Pro
   if (!updated) return { status: "error", message: NOT_FOUND };
 
   refreshAll();
-  return { status: "success", message: actionMessage(action, updated.customerLabel, followUpOn, user.timezone) };
+  return { status: "success", message: actionMessage(action, displayName(updated), followUpOn, user.timezone) };
 }
 
 function actionMessage(action: InquiryAction, label: string, followUpOn: string | null, timeZone: string): string {

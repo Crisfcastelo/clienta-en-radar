@@ -34,6 +34,9 @@ begin;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}';
 select pg_temp.expect_error($$insert into public.inquiries (customer_label, summary) values ('   ', 'x')$$, 'nombre solo con espacios');
+insert into public.inquiries (summary, next_action, status) values ('Consulta sin nombre', 'Enviar presupuesto', 'resuelta');
+select pg_temp.check((select resolved_at is not null and customer_label is null from public.inquiries where summary = 'Consulta sin nombre'), 'nombre opcional y creada ya resuelta con resolved_at');
+select pg_temp.expect_error($$insert into public.inquiries (summary) values ('   ')$$, 'descripción obligatoria');
 update public.inquiries set status = 'resuelta' where id = '11111111-0000-0000-0000-000000000001';
 select pg_temp.check((select resolved_at is not null from public.inquiries where id = '11111111-0000-0000-0000-000000000001'), 'resolved_at al resolver');
 update public.inquiries set status = 'por_responder', follow_up_on = current_date - 1 where id = '11111111-0000-0000-0000-000000000001';
@@ -96,10 +99,10 @@ update public.entitlements set status = 'revoked', revoked_at = now(), revoke_re
 begin;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"aaaaaaaa-0000-0000-0000-000000000001"}';
-select pg_temp.check((select count(*) = 1 from public.inquiries), 'A revocada puede leer (exportar)');
+select pg_temp.check((select count(*) = 2 from public.inquiries), 'A revocada puede leer (exportar)');
 with u as (update public.inquiries set summary = 'cambio' returning 1) select pg_temp.check((select count(*) = 0 from u), 'A revocada no edita');
 select pg_temp.expect_error($$insert into public.inquiries (customer_label, summary) values ('x', 'y')$$, 'A revocada no crea');
-with d as (delete from public.inquiries returning 1) select pg_temp.check((select count(*) = 1 from d), 'A revocada puede borrar');
+with d as (delete from public.inquiries returning 1) select pg_temp.check((select count(*) = 2 from d), 'A revocada puede borrar');
 rollback;
 
 -- Primera compradora

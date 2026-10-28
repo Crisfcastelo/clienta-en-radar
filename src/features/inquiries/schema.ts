@@ -7,6 +7,7 @@ export const LIMITS = {
   customerLabel: 80,
   summary: 280,
   notes: 2000,
+  nextAction: 120,
 } as const;
 
 // Un campo opcional vacío o ausente (radio sin marcar) se guarda como null.
@@ -23,11 +24,10 @@ const followUpOn = z.preprocess(
 );
 
 export const inquiryFieldsSchema = z.object({
-  customerLabel: z
-    .string("Escribe un nombre o una referencia.")
-    .trim()
-    .min(1, "Escribe un nombre o una referencia.")
-    .max(LIMITS.customerLabel, `Usa como máximo ${LIMITS.customerLabel} caracteres.`),
+  customerLabel: z.preprocess(
+    emptyToNull,
+    z.string().trim().max(LIMITS.customerLabel, `Usa como máximo ${LIMITS.customerLabel} caracteres.`).nullable(),
+  ),
   summary: z
     .string("Cuenta en pocas palabras qué necesita.")
     .trim()
@@ -38,16 +38,24 @@ export const inquiryFieldsSchema = z.object({
     emptyToNull,
     z.string().trim().max(LIMITS.notes, `Usa como máximo ${LIMITS.notes} caracteres.`).nullable(),
   ),
+  nextAction: z.preprocess(
+    emptyToNull,
+    z.string().trim().max(LIMITS.nextAction, `Usa como máximo ${LIMITS.nextAction} caracteres.`).nullable(),
+  ),
   followUpOn,
+  status: z.enum(INQUIRY_STATUSES, "Elige un estado de la lista."),
 });
 
 export const createInquirySchema = inquiryFieldsSchema.extend({
   id: z.uuid("No se pudo preparar el formulario. Recarga la página."),
+  // Al crear, si no se elige otro, empieza en Por responder.
+  status: z.preprocess(
+    (value) => (value === undefined || value === "" ? "por_responder" : value),
+    z.enum(INQUIRY_STATUSES, "Elige un estado de la lista."),
+  ),
 });
 
-export const updateInquirySchema = inquiryFieldsSchema.extend({
-  status: z.enum(INQUIRY_STATUSES, "Elige un estado de la lista."),
-});
+export const updateInquirySchema = inquiryFieldsSchema;
 
 export const quickActionSchema = z
   .object({

@@ -94,9 +94,16 @@ Esquema SQL (`supabase/borrador`): sin `archived_at`; `retention_days` nulo por 
   "mensajes nuevos", porque la app no lee WhatsApp ni Instagram.
 - Barra inferior con cuatro destinos iguales (Hoy, Consultas, Añadir, Ayuda).
 - Añadir consulta: el canal arriba como cuatro mosaicos de un toque.
-- Del mockup **no** se ha tomado (pendiente de decidir): campo Categoría, campo «Próxima acción» en texto libre,
-  estado elegible al crear, nombre opcional, cuatro indicadores, fotos de clientas y los textos que difieren del
-  documento de contenido funcional. El logotipo «cfc» se pondrá cuando llegue el archivo.
+- Decidido sobre las diferencias del mockup:
+  - **Sin categoría**: es lo que menos fricción provoca al apuntar.
+  - **Próxima acción** opcional: texto libre con atajos de un toque (Responder, Enviar precio, Enviar presupuesto,
+    Confirmar cita, Pedir más datos). Los atajos son provisionales y se pueden cambiar.
+  - **Nombre opcional**: si falta, se muestra «Sin nombre». Lo único obligatorio es «Qué necesita».
+  - **Estado elegible al crear**, con «Por responder» por defecto, en un desplegable de una línea.
+  - **Tres indicadores** en Hoy, los del documento de contenido: cuatro no caben bien en móvil.
+  - **Textos** del documento de contenido funcional; se podrán cambiar más adelante.
+  - **Sin fotos de clientas**: icono del canal.
+  - **Sin logotipo** de momento: hueco vacío hasta que exista.
 
 Los tres recursos que van dentro de la app son: los 25 mensajes editables (Responde sin pensar), la configuración
 guiada de WhatsApp (WhatsApp bajo control) y las secuencias de seguimiento (No dejes la conversación a medias).

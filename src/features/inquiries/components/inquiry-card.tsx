@@ -1,7 +1,7 @@
-import { CalendarClock, ChevronRight, CircleAlert } from "lucide-react";
+import { CalendarClock, ChevronRight, CircleAlert, ListTodo } from "lucide-react";
 import Link from "next/link";
 import { formatFollowUp, formatReceived, formatReceivedShort } from "@/lib/dates";
-import { MESSAGES } from "../domain/labels";
+import { MESSAGES, displayName } from "../domain/labels";
 import { followUpState } from "../domain/priority";
 import type { Inquiry, IsoDate } from "../domain/types";
 import { ChannelAvatar } from "./channel-tag";
@@ -24,6 +24,7 @@ interface Props {
 export function InquiryCard({ inquiry, today, timeZone, headingLevel: Heading = "h3" }: Props) {
   const state = followUpState(inquiry, today);
   const overdue = state === "overdue";
+  const name = displayName(inquiry);
 
   return (
     <article
@@ -45,7 +46,9 @@ export function InquiryCard({ inquiry, today, timeZone, headingLevel: Heading = 
                 href={`/consultas/${inquiry.id}`}
                 className="break-words outline-none after:absolute after:inset-0 after:rounded-(--radius-tarjeta) after:content-['']"
               >
-                {inquiry.customerLabel}
+                <span className={inquiry.customerLabel ? undefined : "font-normal text-chocolate-suave italic"}>
+                  {name}
+                </span>
               </Link>
             </Heading>
             <time
@@ -59,6 +62,15 @@ export function InquiryCard({ inquiry, today, timeZone, headingLevel: Heading = 
           </div>
 
           <p className="mt-0.5 line-clamp-2 text-chocolate-suave">{inquiry.summary}</p>
+
+          {inquiry.nextAction && inquiry.status !== "resuelta" ? (
+            <p className="mt-1 flex items-start gap-1.5 text-sm">
+              <ListTodo aria-hidden className="mt-0.5 size-4 shrink-0 text-bosque" />
+              <span>
+                <span className="font-semibold">Próxima acción:</span> {inquiry.nextAction}
+              </span>
+            </p>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <StatusBadge status={inquiry.status} />
@@ -85,7 +97,7 @@ export function InquiryCard({ inquiry, today, timeZone, headingLevel: Heading = 
       </div>
 
       <div className="mt-3 border-t border-borde/80 pt-3">
-        <QuickActions id={inquiry.id} customerLabel={inquiry.customerLabel} status={inquiry.status} today={today} />
+        <QuickActions id={inquiry.id} customerLabel={name} status={inquiry.status} today={today} />
       </div>
     </article>
   );

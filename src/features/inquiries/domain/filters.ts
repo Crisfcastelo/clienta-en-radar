@@ -101,7 +101,9 @@ export function filterInquiries(
     if (filters.channel && inquiry.channel !== filters.channel) return false;
     if (since && toIsoDateIn(new Date(inquiry.createdAt), timeZone) < since) return false;
     if (needle) {
-      const haystack = normalizeForSearch(`${inquiry.customerLabel} ${inquiry.summary}`);
+      const haystack = normalizeForSearch(
+        `${inquiry.customerLabel ?? ""} ${inquiry.summary} ${inquiry.nextAction ?? ""}`,
+      );
       if (!haystack.includes(needle)) return false;
     }
     return true;

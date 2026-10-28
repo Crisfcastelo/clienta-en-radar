@@ -30,19 +30,20 @@ test.describe("Añadir consulta", () => {
     await expect(page.getByText("Guarda lo imprescindible. Lo demás puede esperar.")).toBeVisible();
     await page.getByRole("button", { name: "Guardar consulta" }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Revisa los campos marcados." })).toBeVisible();
-    await expect(page.getByText("Escribe un nombre o una referencia.")).toBeVisible();
     await expect(page.getByText("Cuenta en pocas palabras qué necesita.")).toBeVisible();
-    await expect(page.getByLabel("Nombre o referencia")).toBeFocused();
-    await expect(page.getByLabel("Nombre o referencia")).toHaveAttribute("aria-invalid", "true");
+    // El nombre es opcional: solo se marca lo que falta de verdad.
+    await expect(page.getByLabel("Qué necesita")).toBeFocused();
+    await expect(page.getByLabel("Qué necesita")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel("Nombre o referencia")).not.toHaveAttribute("aria-invalid", "true");
     await expectNoA11yViolations(page);
   });
 
   test("conserva lo escrito si hay un error", async ({ page }) => {
     await page.goto("/consultas/nueva");
-    await page.getByLabel("Qué necesita").fill("Precio del curso");
+    await page.getByLabel("Nombre o referencia").fill("Rosa");
     await page.getByRole("button", { name: "Guardar consulta" }).click();
-    await expect(page.getByText("Escribe un nombre o una referencia.")).toBeVisible();
-    await expect(page.getByLabel("Qué necesita")).toHaveValue("Precio del curso");
+    await expect(page.getByText("Cuenta en pocas palabras qué necesita.")).toBeVisible();
+    await expect(page.getByLabel("Nombre o referencia")).toHaveValue("Rosa");
   });
 
   test("guarda con pocos toques y aparece en Hoy como por responder", async ({ page }) => {
@@ -60,6 +61,22 @@ test.describe("Añadir consulta", () => {
     await page.getByRole("link", { name: "volver a tus pendientes" }).click();
     const section = page.getByRole("region", { name: /Por responder/ });
     await expect(section.getByRole("link", { name: "Rocío (prueba E2E)" })).toBeVisible();
+  });
+
+  test("sin nombre, con estado elegido y próxima acción de un toque", async ({ page }) => {
+    await page.goto("/consultas/nueva");
+    await page.getByLabel("Qué necesita").fill("Pregunta por los bonos de primavera");
+    await page.getByLabel("Estado").selectOption("esperando_respuesta");
+    await page.getByRole("button", { name: "Enviar presupuesto" }).click();
+    await expect(page.getByRole("textbox", { name: /^Próxima acción/ })).toHaveValue("Enviar presupuesto");
+    await page.getByRole("button", { name: "Guardar consulta" }).click();
+    await expect(statusMessage(page, SAVED)).toBeVisible();
+
+    await page.goto("/consultas?estado=esperando_respuesta");
+    const card = page.getByRole("article").filter({ hasText: "Pregunta por los bonos de primavera" });
+    await expect(card.getByRole("link", { name: "Sin nombre" })).toBeVisible();
+    await expect(card.getByText("Próxima acción:")).toBeVisible();
+    await expect(card.getByText("Enviar presupuesto")).toBeVisible();
   });
 
   test("un doble envío no crea duplicados", async ({ page }) => {
@@ -150,7 +167,7 @@ test.describe("Detalle", () => {
   test("editar descripción, estado y próxima revisión", async ({ page }) => {
     await page.goto(`/consultas/${CARMEN}`);
     await page.getByLabel("Qué necesita").fill("Envío a Canarias: le paso tarifas el lunes.");
-    await page.getByText("Esperando respuesta", { exact: true }).click();
+    await page.getByLabel("Estado").selectOption("esperando_respuesta");
     await page.getByRole("button", { name: "Mañana" }).click();
     await page.getByRole("button", { name: "Guardar cambios" }).click();
     await expect(statusMessage(page, "Cambios guardados.")).toBeVisible();

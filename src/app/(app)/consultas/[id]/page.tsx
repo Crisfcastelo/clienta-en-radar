@@ -1,4 +1,4 @@
-import { CalendarClock, CircleAlert, Inbox, PencilLine } from "lucide-react";
+import { CalendarClock, CircleAlert, Inbox, ListTodo, PencilLine } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
@@ -11,7 +11,7 @@ import { InquiryForm } from "@/features/inquiries/components/inquiry-form";
 import { QuickActions } from "@/features/inquiries/components/quick-actions";
 import { StatusBadge } from "@/features/inquiries/components/status-badge";
 import { inquiries } from "@/features/inquiries/data";
-import { MESSAGES } from "@/features/inquiries/domain/labels";
+import { MESSAGES, displayName } from "@/features/inquiries/domain/labels";
 import { followUpState } from "@/features/inquiries/domain/priority";
 import { idSchema } from "@/features/inquiries/schema";
 import { formatDateTime, formatFollowUp, todayIn } from "@/lib/dates";
@@ -32,7 +32,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title={inquiry.customerLabel} back={{ href: "/consultas", label: "Todas tus consultas" }} />
+      <PageHeader title={displayName(inquiry)} back={{ href: "/consultas", label: "Todas tus consultas" }} />
 
       <Card className="space-y-4 p-5">
         <div className="flex flex-wrap items-center gap-3">
@@ -64,13 +64,22 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
             </dt>
             <dd className="text-lg">{formatDateTime(inquiry.createdAt, user.timezone)}</dd>
           </div>
+          {inquiry.nextAction ? (
+            <div className="rounded-2xl bg-salvia p-3 sm:col-span-2">
+              <dt className="flex items-center gap-1.5 text-sm font-semibold">
+                <ListTodo aria-hidden className="size-4" />
+                Próxima acción
+              </dt>
+              <dd className="text-lg">{inquiry.nextAction}</dd>
+            </div>
+          ) : null}
         </dl>
         <p className="flex items-center gap-1.5 text-sm text-chocolate-suave">
           <PencilLine aria-hidden className="size-4" />
           Última modificación: {formatDateTime(inquiry.updatedAt, user.timezone)}
         </p>
 
-        <QuickActions id={inquiry.id} customerLabel={inquiry.customerLabel} status={inquiry.status} today={today} />
+        <QuickActions id={inquiry.id} customerLabel={displayName(inquiry)} status={inquiry.status} today={today} />
       </Card>
 
       <Card className="p-5 sm:p-6">
@@ -78,7 +87,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
         <InquiryForm mode="edit" inquiry={inquiry} today={today} action={action} />
       </Card>
 
-      <DeleteInquiry id={inquiry.id} customerLabel={inquiry.customerLabel} />
+      <DeleteInquiry id={inquiry.id} customerLabel={displayName(inquiry)} />
     </div>
   );
 }
