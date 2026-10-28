@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de marca. Contrastes comprobados con la fórmula WCAG 2.2:
+ * chocolate/crema 12,2:1 · chocolate-suave/crema 6,2:1 · blanco/oliva 6,8:1
+ * terracota/crema 5,9:1 · dorado/crema 4,8:1 · borde-campo/blanco 4,1:1 (UI ≥ 3:1)
+ * dorado-deco es solo decorativo: nunca para texto.
+ */
+@theme {
+  --color-crema: #f7f1e7;
+  --color-superficie: #ffffff;
+  --color-neutro: #eee6da;
+  --color-borde: #e6dccd;
+  --color-borde-campo: #8c7a6b;
+  --color-chocolate: #3a2a21;
+  --color-chocolate-suave: #6a5546;
+  --color-oliva: #55602f;
+  --color-oliva-oscuro: #444d25;
+  --color-oliva-claro: #e8ebda;
+  --color-dorado: #8a6420;
+  --color-dorado-claro: #f5e9cf;
+  --color-dorado-deco: #c29b4e;
+  --color-terracota: #a13a28;
+  --color-terracota-claro: #f6e1db;
+
+  --font-sans: var(--font-texto), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-titulos), Georgia, "Times New Roman", serif;
+
+  --radius-tarjeta: 1.25rem;
+  --shadow-suave: 0 1px 2px rgb(58 42 33 / 0.06), 0 4px 16px rgb(58 42 33 / 0.05);
+}
+
+@layer base {
+  html {
+    /* 1rem = 17px: texto base más cómodo de leer en móvil. */
+    font-size: 106.25%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-crema);
+    color: var(--color-chocolate);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-oliva);
+    outline-offset: 2px;
+  }
+
+  /* Safari en iPhone hace zoom si un campo tiene menos de 16px. */
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
+  }
+
+  dialog::backdrop {
+    background: rgb(58 42 33 / 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}

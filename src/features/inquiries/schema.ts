@@ -1,0 +1,81 @@
+import { z } from "zod";
+import { isValidIsoDate } from "@/lib/dates";
+import { INQUIRY_CHANNELS, INQUIRY_STATUSES } from "./domain/types";
+
+export const LIMITS = {
+  customerLabel: 80,
+  summary: 280,
+  notes: 2000,
+} as const;
+
+// Un campo opcional vacío o ausente (radio sin marcar) se guarda como null.
+const emptyToNull = (value: unknown) =>
+  value === undefined || (typeof value === "string" && value.trim() === "") ? null : value;
+
+const followUpOn = z.preprocess(
+  emptyToNull,
+  z
+    .string()
+    .refine(isValidIsoDate, "Esa fecha no es válida.")
+    .refine((value) => value >= "2020-01-01" && value <= "2100-12-31", "Esa fecha no es válida.")
+    .nullable(),
+);
+
+export const inquiryFieldsSchema = z.object({
+  customerLabel: z
+    .string("Escribe un nombre o una referencia.")
+    .trim()
+    .min(1, "Escribe un nombre o una referencia.")
+    .max(LIMITS.customerLabel, `Usa como máximo ${LIMITS.customerLabel} caracteres.`),
+  summary: z
+    .string("Cuenta en pocas palabras qué te han preguntado.")
+    .trim()
+    .min(1, "Cuenta en pocas palabras qué te han preguntado.")
+    .max(LIMITS.summary, `Usa como máximo ${LIMITS.summary} caracteres.`),
+  channel: z.preprocess(emptyToNull, z.enum(INQUIRY_CHANNELS, "Elige un canal de la lista.").nullable()),
+  notes: z.preprocess(
+    emptyToNull,
+    z.string().trim().max(LIMITS.notes, `Usa como máximo ${LIMITS.notes} caracteres.`).nullable(),
+  ),
+  followUpOn,
+});
+
+export const createInquirySchema = inquiryFieldsSchema.extend({
+  id: z.uuid("No se pudo preparar el formulario. Recarga la página."),
+});
+
+export const updateInquirySchema = inquiryFieldsSchema.extend({
+  status: z.enum(INQUIRY_STATUSES, "Elige un estado de la lista."),
+});
+
+export const statusChangeSchema = z.object({
+  id: z.uuid(),
+  status: z.enum(INQUIRY_STATUSES),
+});
+
+export const idSchema = z.object({ id: z.uuid() });
+
+export type InquiryFields = z.infer<typeof inquiryFieldsSchema>;
+export type CreateInquiryInput = z.infer<typeof createInquirySchema>;
+export type UpdateInquiryInput = z.infer<typeof updateInquirySchema>;
+
+export type FieldErrors = Partial<Record<string, string>>;
+
+/** Primer mensaje de error por campo, listo para pintar junto a cada input. */
+export function toFieldErrors(error: z.ZodError): FieldErrors {
+  const flat = z.flattenError(error).fieldErrors as Record<string, string[] | undefined>;
+  const result: FieldErrors = {};
+  for (const [key, messages] of Object.entries(flat)) {
+    if (messages?.[0]) result[key] = messages[0];
+  }
+  return result;
+}
+
+export function formDataToRecord(formData: FormData, keys: readonly string[]): Record<string, unknown> {
+  const record: Record<string, unknown> = {};
+  for (const key of keys) {
+    const value = formData.get(key);
+    record[key] = typeof value === "string" ? value : undefined;
+  }
+  return record;
+}
