@@ -37,17 +37,23 @@ psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v email='tu@emai
 
 Sin Supabase se puede ver la app con datos ficticios: `DEMO_MODE=true npm run dev`.
 
-## Puesta en marcha del proyecto real (pendiente de que exista)
+## Puesta en marcha del proyecto real
 
-1. **Crear el proyecto** en Supabase, región Frankfurt (eu-central-1).
-2. **Aplicar la migración**: `npx supabase link --project-ref <ref>` y `npx supabase db push`, o con el conector de
-   Supabase desde Claude, siempre con confirmación previa.
+Proyecto `clienta-en-radar` (ref `iidpuccxivqafxgxssqb`), Frankfurt, organización Crisfcastelo. Emails con Resend desde
+el dominio `crisfcastelo.com`, remitente `acceso@crisfcastelo.com`.
+
+1. ~~Crear el proyecto~~ hecho el 28/10/2026.
+2. ~~Aplicar la migración~~ hecho con el conector, registrada con la versión `20261028180000` para que
+   `npx supabase db push` no la repita. Las siguientes: `npx supabase link --project-ref iidpuccxivqafxgxssqb` y
+   `npx supabase db push`, siempre con confirmación previa.
 3. **Authentication > Sign In / Providers > Email**: email activado, "Confirm email" activado, caducidad del código
    (Email OTP Expiration) en 600 segundos, longitud 6.
 4. **Authentication > Email Templates**: en "Magic link" y en "Confirm signup", asunto «Tu código para entrar en
    Clienta en Radar» y el contenido de `supabase/templates/codigo-acceso.html`.
-5. **SMTP propio** (Resend, Brevo o Postmark) en Authentication > SMTP Settings. Sin esto Supabase solo envía a los
-   miembros del equipo y con un límite muy bajo.
+5. **SMTP con Resend** en Authentication > SMTP Settings: host `smtp.resend.com`, puerto `465`, usuario `resend`,
+   contraseña una API key de Resend con permiso solo de envío (se escribe directamente en el panel, nunca en el
+   repositorio ni en el chat), remitente `acceso@crisfcastelo.com` con nombre «Clienta en Radar». Sin esto Supabase
+   solo envía a los miembros del equipo y con un límite muy bajo.
 6. **URL Configuration**: Site URL con el dominio de la app.
 7. **Rate limits**: revisar los de envío de emails y verificación de códigos según el volumen esperado.
 8. **Variables en Vercel** (solo servidor): `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`. La clave secreta aún no hace
