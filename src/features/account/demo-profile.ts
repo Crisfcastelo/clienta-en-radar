@@ -1,5 +1,4 @@
-/** Fase 2: datos de cuenta ficticios mientras no hay autenticación real. */
-export const DEMO_MODE = true;
+/** Cuenta ficticia del modo demostración (DEMO_MODE=true). */
 
 export const DEMO_PROFILE = {
   id: "demo-user",

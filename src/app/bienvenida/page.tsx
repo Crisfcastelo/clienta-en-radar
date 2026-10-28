@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { completeOnboardingAction } from "@/features/account/actions";
-import { DEMO_MODE } from "@/features/account/demo-profile";
+import { isDemoMode } from "@/lib/env";
 import { requireUser } from "@/features/account/session";
 import { createInquiryAction } from "@/features/inquiries/actions";
 import { InquiryForm } from "@/features/inquiries/components/inquiry-form";
@@ -25,7 +25,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/bienveni
 
   return (
     <main className="pt-safe mx-auto flex min-h-dvh max-w-xl flex-col gap-6 px-4 py-8">
-      {DEMO_MODE ? (
+      {isDemoMode() ? (
         <p className="rounded-2xl bg-dorado-claro px-4 py-2 text-center text-sm">
           Versión de prueba con datos ficticios.
         </p>

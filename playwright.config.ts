@@ -2,9 +2,22 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
 
+/**
+ * Dos modos de prueba:
+ * - demo (por defecto): datos ficticios en memoria, sin servicios externos.
+ * - supabase (E2E_MODE=supabase): cuentas reales contra un Supabase local
+ *   (`npx supabase start`), con los códigos de acceso leídos de Mailpit.
+ */
+const supabaseMode = process.env.E2E_MODE === "supabase";
+
+const serverEnv: Record<string, string> = Object.fromEntries(
+  Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+);
+if (!supabaseMode) serverEnv.DEMO_MODE = "true";
+
 export default defineConfig({
-  testDir: "./tests/e2e",
-  // El almacén de datos ficticios vive en memoria en un solo proceso: pruebas en serie.
+  testDir: supabaseMode ? "./tests/e2e/supabase" : "./tests/e2e/demo",
+  // Los datos (en memoria o en la base local) se comparten: pruebas en serie.
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -24,8 +37,9 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run start -- --port ${PORT}`,
-    url: `http://localhost:${PORT}/hoy`,
+    url: `http://localhost:${PORT}/acceso`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: serverEnv,
   },
 });

@@ -1,5 +1,5 @@
--- Clienta en Radar · migración inicial (BORRADOR fase 1)
--- Pensada para Supabase (PostgreSQL 15+). Requiere el esquema auth de Supabase.
+-- Clienta en Radar · migración inicial.
+-- Requiere el esquema auth de Supabase. Probada con supabase/tests/rls-smoke-test.sql.
 
 -- ---------------------------------------------------------------------------
 -- Utilidades
@@ -473,6 +473,12 @@ alter table public.rate_limits        enable row level security;
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all sequences in schema public from anon, authenticated;
 revoke execute on all functions in schema public from public, anon, authenticated;
+
+-- Supabase da permisos amplios por defecto a las tablas y funciones nuevas de public.
+-- Se quitan también para las futuras: cada migración tendrá que dar los suyos explícitamente.
+alter default privileges in schema public revoke all on tables from anon, authenticated;
+alter default privileges in schema public revoke all on sequences from anon, authenticated;
+alter default privileges in schema public revoke execute on functions from public, anon, authenticated;
 
 -- profiles: leer y editar solo lo propio, solo columnas editables
 grant select on public.profiles to authenticated;

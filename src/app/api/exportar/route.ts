@@ -1,9 +1,10 @@
-import { requireUser } from "@/features/account/session";
+import { requireSession } from "@/features/account/session";
 import { inquiriesToCsv, inquiriesToJson } from "@/features/account/export";
 import { inquiries } from "@/features/inquiries/data";
 
 export async function GET(request: Request) {
-  await requireUser();
+  // Basta con tener sesión: exportar es un derecho aunque ya no haya acceso al producto.
+  await requireSession();
   const format = new URL(request.url).searchParams.get("formato") === "csv" ? "csv" : "json";
   const list = await inquiries().list();
   const now = new Date();

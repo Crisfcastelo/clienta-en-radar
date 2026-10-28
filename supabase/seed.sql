@@ -1,0 +1,2 @@
+-- Sin datos de ejemplo: en local se entra con cualquier email (el código llega a Mailpit, http://localhost:54324)
+-- y el acceso de prueba se concede con supabase/dev/conceder-acceso.sql.

@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { resetDemoDataAction, signOutAction } from "@/features/account/actions";
-import { DEMO_MODE } from "@/features/account/demo-profile";
+import { resetDemoDataAction } from "@/features/account/actions";
+import { signOutAction } from "@/features/auth/actions";
+import { isDemoMode } from "@/lib/env";
 import { requireUser } from "@/features/account/session";
 
 export const metadata: Metadata = { title: "Ajustes" };
@@ -76,7 +77,7 @@ export default async function SettingsPage() {
         </p>
       </Card>
 
-      {DEMO_MODE ? (
+      {isDemoMode() ? (
         <Card className="space-y-3 border-dashed border-dorado p-5">
           <h2 className="text-xl">Solo en la versión de prueba</h2>
           <p>Para revisar cómo se ve la app en distintos momentos.</p>

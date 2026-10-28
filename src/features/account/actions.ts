@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { resetMockStore } from "@/features/inquiries/mock-repository";
-import { DEMO_MODE } from "./demo-profile";
+import { isDemoMode } from "@/lib/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mockProfileState } from "./mock-profile";
 import { requireUser } from "./session";
 
 /** Solo en modo demostración: restaura los datos de ejemplo o deja la cuenta como recién comprada. */
 export async function resetDemoDataAction(formData: FormData): Promise<void> {
-  if (!DEMO_MODE) return;
+  if (!isDemoMode()) return;
   await requireUser();
   const empty = formData.get("mode") === "vacio";
   resetMockStore(empty ? "vacio" : "ejemplo");
@@ -20,13 +21,17 @@ export async function resetDemoDataAction(formData: FormData): Promise<void> {
 
 /** Termina (o salta) la primera configuración. No vuelve a mostrarse. */
 export async function completeOnboardingAction(): Promise<void> {
-  await requireUser();
-  mockProfileState().onboardedAt ??= new Date().toISOString();
+  const user = await requireUser();
+  if (isDemoMode()) {
+    mockProfileState().onboardedAt ??= new Date().toISOString();
+  } else if (!user.onboardedAt) {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (error) throw new Error("No se pudo guardar la configuración.");
+  }
   revalidatePath("/", "layout");
   redirect("/hoy");
-}
-
-/** Fase 3: cerrará la sesión de Supabase y limpiará cachés del service worker. */
-export async function signOutAction(): Promise<void> {
-  redirect("/acceso");
 }

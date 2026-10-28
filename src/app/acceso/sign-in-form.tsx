@@ -1,51 +1,28 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import type { FormEvent } from "react";
-import { Button } from "@/components/ui/button";
+import { useActionState } from "react";
 import { Field, TextInput } from "@/components/ui/field";
 import { Notice } from "@/components/ui/notice";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { requestCodeAction, verifyCodeAction } from "@/features/auth/actions";
+import type { SignInState } from "@/features/auth/actions";
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const initial: SignInState = { step: "email" };
 
-/**
- * Fase 2: solo interfaz, no envía emails. En fase 3 cada paso llamará a una
- * Server Action con Supabase Auth (signInWithOtp y verifyOtp de tipo email).
- */
+/** Acceso en dos pasos: email y código de 6 cifras. Sin contraseñas que recordar. */
 export function SignInForm() {
-  const router = useRouter();
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [state, action] = useActionState(async (prev: SignInState, formData: FormData): Promise<SignInState> => {
+    const intent = formData.get("intent");
+    if (intent === "cambiar") return { step: "email", email: prev.step === "code" ? prev.email : undefined };
+    if (intent === "verificar") return verifyCodeAction(prev, formData);
+    return requestCodeAction(prev, formData);
+  }, initial);
 
-  function submitEmail(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const value = String(new FormData(event.currentTarget).get("email") ?? "").trim();
-    if (!EMAIL.test(value)) {
-      setError("Escribe un email válido, por ejemplo nombre@gmail.com.");
-      return;
-    }
-    setError(null);
-    setEmail(value);
-    setStep("code");
-  }
-
-  function submitCode(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const value = String(new FormData(event.currentTarget).get("code") ?? "").replace(/\s/g, "");
-    if (!/^\d{6}$/.test(value)) {
-      setError("El código tiene 6 números. Revisa el email que te hemos enviado.");
-      return;
-    }
-    setError(null);
-    router.push("/hoy");
-  }
-
-  if (step === "email") {
+  if (state.step === "email") {
     return (
-      <form onSubmit={submitEmail} noValidate className="space-y-5">
-        <Field id="email" label="Tu email" hint="El mismo que usaste al comprar." error={error ?? undefined}>
+      <form action={action} noValidate className="space-y-5">
+        <input type="hidden" name="intent" value="pedir" />
+        <Field id="email" label="Tu email" hint="El mismo que usaste al comprar." error={state.error}>
           {(aria) => (
             <TextInput
               {...aria}
@@ -53,48 +30,59 @@ export function SignInForm() {
               type="email"
               autoComplete="email"
               inputMode="email"
-              defaultValue={email}
+              defaultValue={state.email ?? ""}
             />
           )}
         </Field>
-        <Button type="submit" size="lg" full>
+        <SubmitButton size="lg" full pendingLabel="Enviando…">
           Enviarme un código
-        </Button>
+        </SubmitButton>
       </form>
     );
   }
 
   return (
-    <form onSubmit={submitCode} noValidate className="space-y-5">
+    <div className="space-y-5">
       <Notice tone="info">
-        Te hemos enviado un código de 6 números a <strong className="break-all">{email}</strong>. Puede tardar un
-        minuto; mira también en spam.
+        {state.resent ? "Te hemos enviado un código nuevo" : "Te hemos enviado un código de 6 números"} a{" "}
+        <strong className="break-all">{state.email}</strong>. Puede tardar un minuto; mira también en spam.
       </Notice>
-      <Field id="code" label="Código" error={error ?? undefined}>
-        {(aria) => (
-          <TextInput
-            {...aria}
-            name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={7}
-            className="text-center text-2xl tracking-[0.4em]"
-          />
-        )}
-      </Field>
-      <Button type="submit" size="lg" full>
-        Entrar
-      </Button>
-      <Button
-        variant="ghost"
-        full
-        onClick={() => {
-          setError(null);
-          setStep("email");
-        }}
-      >
-        Usar otro email
-      </Button>
-    </form>
+      <form action={action} noValidate className="space-y-5">
+        <input type="hidden" name="intent" value="verificar" />
+        <input type="hidden" name="email" value={state.email} />
+        <Field id="code" label="Código" error={state.error}>
+          {(aria) => (
+            <TextInput
+              {...aria}
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={7}
+              autoFocus
+              className="text-center text-2xl tracking-[0.4em]"
+            />
+          )}
+        </Field>
+        <SubmitButton size="lg" full pendingLabel="Comprobando…">
+          Entrar
+        </SubmitButton>
+      </form>
+      <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+        <form action={action}>
+          <input type="hidden" name="intent" value="pedir" />
+          <input type="hidden" name="reenviar" value="1" />
+          <input type="hidden" name="email" value={state.email} />
+          <SubmitButton variant="ghost" full pendingLabel="Enviando…">
+            Enviarme otro código
+          </SubmitButton>
+        </form>
+        <form action={action}>
+          <input type="hidden" name="intent" value="cambiar" />
+          <SubmitButton variant="ghost" full pendingLabel="…">
+            Usar otro email
+          </SubmitButton>
+        </form>
+      </div>
+    </div>
   );
 }

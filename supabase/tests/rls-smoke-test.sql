@@ -1,5 +1,6 @@
 \set ON_ERROR_STOP 1
--- Prueba rápida de RLS y funciones (borrador fase 1)
+-- Pruebas de seguridad de la base de datos: RLS con dos usuarias, permisos, pagos idempotentes,
+-- compra por email y primera compradora. Se ejecuta en CI contra un Supabase local recién creado.
 insert into auth.users (id, email) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'a@test.local'),
   ('bbbbbbbb-0000-0000-0000-000000000002', 'b@test.local');

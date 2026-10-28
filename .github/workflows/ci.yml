@@ -1,15 +1,16 @@
 name: CI
 
 on:
+  # En cada push a cualquier rama: así cada cambio se prueba antes de llegar a main.
   push:
-    branches: [main]
-  pull_request:
+    branches: ["**"]
 
 permissions:
   contents: read
 
 jobs:
   check:
+    name: Calidad y E2E (demostración)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -27,6 +28,55 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-demo
+          path: test-results/
+          retention-days: 7
+
+  supabase:
+    name: Supabase local (RLS y E2E con cuentas reales)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Arrancar Supabase local
+        run: npx supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
+
+      - name: Exportar variables del Supabase local
+        run: |
+          set -a
+          source <(npx supabase status -o env)
+          set +a
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "DB_URL=$DB_URL"
+            echo "MAILPIT_URL=$MAILPIT_URL"
+          } >> "$GITHUB_ENV"
+
+      - name: Pruebas de seguridad de la base de datos (RLS, pagos, primera compradora)
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls-smoke-test.sql | tee rls.log
+          grep -q TODAS_LAS_PRUEBAS_OK rls.log
+
+      - name: Base de datos limpia para las E2E
+        run: npx supabase db reset
+
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: E2E con cuentas reales
+        run: npm run test:e2e
+        env:
+          CI: "true"
+          E2E_MODE: supabase
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-supabase
           path: test-results/
           retention-days: 7

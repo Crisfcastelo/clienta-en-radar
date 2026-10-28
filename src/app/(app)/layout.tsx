@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { BottomNav, SideNav } from "@/components/app-nav";
 import { BrandName } from "@/components/brand";
 import { Toaster } from "@/components/toaster";
-import { DEMO_MODE } from "@/features/account/demo-profile";
+import { isDemoMode } from "@/lib/env";
 import { requireUser } from "@/features/account/session";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         Saltar al contenido
       </a>
 
-      {DEMO_MODE ? (
+      {isDemoMode() ? (
         <p className="pt-safe bg-dorado-claro px-4 py-1.5 text-center text-sm">
           Versión de prueba con datos ficticios. Nada de lo que escribas se guarda de forma permanente.
         </p>
