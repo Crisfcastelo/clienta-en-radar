@@ -67,3 +67,4 @@ tests/e2e/                Playwright
 
 - [Plan de la fase 1](docs/fase-1-plan.md): arquitectura, esquema, diseño y plan de pruebas.
 - [Decisiones](docs/decisiones.md): lo que se ha decidido después y por qué.
+- [Contenido funcional](docs/contenido-funcional.md): textos definitivos y reglas de producto.
