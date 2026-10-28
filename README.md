@@ -4,23 +4,26 @@ PWA de **Crisfcastelo** para dueñas de pequeños negocios que reciben consultas
 canales. Sirve para saber a quién responder, qué conversación revisar y qué se puede dar por resuelto, sin depender de
 la memoria.
 
-> **Estado actual: fase 2.** Interfaz completa con **datos ficticios en memoria** y navegación funcional. Todavía no
-> hay cuentas, base de datos ni pagos reales. No usar con datos de clientas reales.
+> **Estado actual: fase 3.** Cuentas con acceso por código de email, base de datos en Supabase con RLS y datos
+> reales por usuaria. Pendiente de crear el proyecto Supabase real y el envío de emails (ver
+> [docs/fase-3-supabase.md](docs/fase-3-supabase.md)).
 
 ## Requisitos
 
-- Node.js 22 o superior
-- npm 10
+- Node.js 22 o superior y npm 10
+- Docker, para el Supabase local
 
 ## Puesta en marcha
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
+npx supabase start                 # base de datos, Auth y Mailpit en local
+cp .env.example .env.local         # y rellena con: npx supabase status -o env
+npm run dev                        # http://localhost:3000
 ```
 
-En la versión de prueba, `/acceso` acepta cualquier email y cualquier código de 6 números. En **Ajustes** hay botones
-para restaurar los datos de ejemplo o ver la app como una cuenta nueva.
+Los códigos de acceso llegan a Mailpit (http://127.0.0.1:54324). Para ver la app sin base de datos, con datos
+ficticios: `DEMO_MODE=true npm run dev`.
 
 ## Comandos
 
@@ -35,7 +38,9 @@ para restaurar los datos de ejemplo o ver la app como una cuenta nueva.
 | `npm run format`    | Formatea con Prettier                                                  |
 | `npm run check`     | Formato + lint + tipos + unitarias + build                             |
 
-Las pruebas E2E arrancan `next start`, así que necesitan un `npm run build` previo. Si el Chromium instalado no coincide
+Las pruebas E2E arrancan `next start`, así que necesitan un `npm run build` previo. Por defecto usan el modo
+demostración; con `E2E_MODE=supabase` (y las variables de `npx supabase status -o env`) prueban cuentas reales contra
+el Supabase local. Si el Chromium instalado no coincide
 con la versión de Playwright, se puede indicar otro con `PW_CHROMIUM_PATH=/ruta/a/chrome npm run test:e2e`.
 
 ## Estructura
@@ -58,7 +63,9 @@ src/
     help/                 registro de recursos y bonus
   components/             UI reutilizable (botones, campos, diálogo, avisos…)
   lib/                    fechas por zona horaria, ids
-supabase/borrador/        esquema SQL y prueba de RLS de la fase 1 (se convertirá en migraciones en fase 3)
+supabase/migrations/      esquema de la base de datos, versionado
+supabase/tests/           pruebas de seguridad (RLS, pagos, compra por email)
+supabase/templates/       email con el código de acceso
 docs/                     plan de la fase 1 y decisiones
 tests/e2e/                Playwright
 ```
@@ -68,3 +75,4 @@ tests/e2e/                Playwright
 - [Plan de la fase 1](docs/fase-1-plan.md): arquitectura, esquema, diseño y plan de pruebas.
 - [Decisiones](docs/decisiones.md): lo que se ha decidido después y por qué.
 - [Contenido funcional](docs/contenido-funcional.md): textos definitivos y reglas de producto.
+- [Fase 3 · Supabase](docs/fase-3-supabase.md): cómo funciona el acceso y cómo configurar el proyecto real.
