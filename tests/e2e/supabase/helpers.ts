@@ -97,6 +97,8 @@ export async function signIn(page: Page, email: string) {
   const code = await latestCode(email, sentAt);
   await page.getByLabel("Código").fill(code);
   await page.getByRole("button", { name: "Entrar" }).click();
+  // Esperar a que el código se verifique y la sesión quede guardada antes de seguir navegando.
+  await expect(page).not.toHaveURL(/\/acceso$/, { timeout: 15_000 });
 }
 
 /** Salta la bienvenida si aparece, para llegar a Hoy. */
