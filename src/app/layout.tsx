@@ -22,7 +22,7 @@ const titulos = Fraunces({
 
 export const metadata: Metadata = {
   title: { default: "Clienta en Radar", template: "%s · Clienta en Radar" },
-  description: "Controla a quién tienes que responder y qué conversaciones necesitan seguimiento.",
+  description: "Tus consultas pendientes, fuera de tu cabeza y bajo control.",
   applicationName: "Clienta en Radar",
   robots: { index: false, follow: false },
   formatDetection: { telephone: false, email: false, address: false },

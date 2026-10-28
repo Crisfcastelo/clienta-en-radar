@@ -58,8 +58,8 @@ export default async function SettingsPage() {
           </a>
         </div>
         <p className="text-sm text-chocolate-suave">
-          Borrado automático de consultas resueltas o archivadas: <strong>{RETENTION_LABELS[retention]}</strong>. Lo
-          podrás cambiar cuando conectemos las cuentas.
+          Borrado automático de consultas resueltas: <strong>{RETENTION_LABELS[retention]}</strong>. Mientras no lo
+          actives, las resueltas se quedan en tu historial. Podrás cambiarlo cuando conectemos las cuentas.
         </p>
       </Card>
 
@@ -90,7 +90,7 @@ export default async function SettingsPage() {
             <form action={resetDemoDataAction}>
               <input type="hidden" name="mode" value="vacio" />
               <Button type="submit" variant="secondary" full>
-                Ver como cuenta nueva
+                Ver como compradora nueva
               </Button>
             </form>
           </div>

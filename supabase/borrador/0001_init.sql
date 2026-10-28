@@ -25,7 +25,8 @@ create table public.profiles (
   display_name   text check (display_name is null or char_length(btrim(display_name)) between 1 and 60),
   business_name  text check (business_name is null or char_length(btrim(business_name)) between 1 and 80),
   timezone       text not null default 'Europe/Madrid' check (char_length(timezone) between 1 and 64),
-  retention_days integer default 365 check (retention_days is null or retention_days in (90, 180, 365, 730)),
+  -- Nulo = no borrar nunca (por defecto): las resueltas quedan en el historial.
+  retention_days integer default null check (retention_days is null or retention_days in (90, 180, 365, 730)),
   onboarded_at   timestamptz,
   created_at     timestamptz not null default now()
 );
@@ -71,7 +72,10 @@ create trigger on_auth_user_created
 
 create table public.entitlements (
   id                  uuid primary key default gen_random_uuid(),
-  user_id             uuid not null references auth.users (id) on delete cascade,
+  -- Nulo mientras la compra (hecha con un Payment Link, antes de tener cuenta) no se ha reclamado.
+  user_id             uuid references auth.users (id) on delete cascade,
+  -- Email de la compra en Stripe, en minúsculas. Necesario para entregar el acceso.
+  purchaser_email     text check (purchaser_email is null or (purchaser_email = lower(purchaser_email) and purchaser_email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' and char_length(purchaser_email) <= 254)),
   product_code        text not null check (product_code ~ '^[a-z0-9_]{2,40}$'),
   status              text not null default 'active' check (status in ('active', 'revoked')),
   source              text not null check (source in ('stripe', 'dev_grant', 'manual')),
@@ -80,8 +84,13 @@ create table public.entitlements (
   revoked_at          timestamptz,
   revoke_reason       text check (revoke_reason in ('refund', 'dispute', 'manual')),
   constraint entitlements_revoked_coherent check ((status = 'revoked') = (revoked_at is not null)),
-  constraint entitlements_stripe_has_payment check (source <> 'stripe' or provider_payment_id is not null)
+  constraint entitlements_stripe_has_payment check (source <> 'stripe' or provider_payment_id is not null),
+  constraint entitlements_has_owner check (user_id is not null or purchaser_email is not null)
 );
+
+create index entitlements_unclaimed_email_idx
+  on public.entitlements (purchaser_email)
+  where user_id is null;
 
 create index entitlements_user_active_idx
   on public.entitlements (user_id, product_code)
@@ -118,7 +127,6 @@ create table public.inquiries (
                  check (status in ('por_responder', 'esperando_respuesta', 'hacer_seguimiento', 'resuelta')),
   follow_up_on   date,
   resolved_at    timestamptz,
-  archived_at    timestamptz,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
   constraint inquiries_resolved_coherent check ((status = 'resuelta') = (resolved_at is not null))
@@ -126,7 +134,7 @@ create table public.inquiries (
 
 create index inquiries_user_active_idx
   on public.inquiries (user_id, status, follow_up_on)
-  where archived_at is null;
+  where status <> 'resuelta';
 
 create index inquiries_user_created_idx
   on public.inquiries (user_id, created_at desc);
@@ -170,7 +178,7 @@ create table public.inquiry_events (
   inquiry_id  uuid not null references public.inquiries (id) on delete cascade,
   user_id     uuid not null references auth.users (id) on delete cascade,
   event_type  text not null
-              check (event_type in ('created', 'status_changed', 'follow_up_changed', 'archived', 'unarchived')),
+              check (event_type in ('created', 'status_changed', 'follow_up_changed')),
   old_status  text,
   new_status  text,
   created_at  timestamptz not null default now()
@@ -200,11 +208,6 @@ begin
   if new.follow_up_on is distinct from old.follow_up_on then
     insert into public.inquiry_events (inquiry_id, user_id, event_type)
     values (new.id, new.user_id, 'follow_up_changed');
-  end if;
-
-  if new.archived_at is distinct from old.archived_at then
-    insert into public.inquiry_events (inquiry_id, user_id, event_type)
-    values (new.id, new.user_id, case when new.archived_at is null then 'unarchived' else 'archived' end);
   end if;
 
   return new;
@@ -311,7 +314,7 @@ $$;
 create or replace function public.process_payment_succeeded(
   p_event_id   text,
   p_event_type text,
-  p_user_id    uuid,
+  p_email      text,
   p_payment_id text,
   p_paid_at    timestamptz,
   p_product    text default 'clienta_en_radar'
@@ -322,6 +325,8 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_email          text := lower(btrim(p_email));
+  v_user_id        uuid;
   v_entitlement_id uuid;
 begin
   insert into public.payment_events (provider_event_id, event_type)
@@ -332,8 +337,12 @@ begin
     return 'duplicate';
   end if;
 
-  insert into public.entitlements (user_id, product_code, status, source, provider_payment_id, granted_at)
-  values (p_user_id, p_product, 'active', 'stripe', p_payment_id, now())
+  -- Si ya existe una cuenta con ese email, el acceso queda vinculado al momento.
+  -- Si no, queda pendiente hasta que entre con ese email (claim_entitlements).
+  select u.id into v_user_id from auth.users u where lower(u.email) = v_email limit 1;
+
+  insert into public.entitlements (user_id, purchaser_email, product_code, status, source, provider_payment_id, granted_at)
+  values (v_user_id, v_email, p_product, 'active', 'stripe', p_payment_id, now())
   on conflict (provider_payment_id) do nothing
   returning id into v_entitlement_id;
 
@@ -378,6 +387,32 @@ begin
     and status = 'active';
 
   return case when found then 'revoked' else 'nothing_to_revoke' end;
+end;
+$$;
+
+-- Vincula a la usuaria actual las compras hechas con su email antes de tener cuenta.
+-- El email del token está verificado: se entra con un código enviado a ese email.
+create or replace function public.claim_entitlements()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_email   text := lower((select auth.jwt()) ->> 'email');
+  v_claimed integer;
+begin
+  if (select auth.uid()) is null or v_email is null then
+    return 0;
+  end if;
+
+  update public.entitlements
+  set user_id = (select auth.uid())
+  where user_id is null
+    and purchaser_email = v_email;
+
+  get diagnostics v_claimed = row_count;
+  return v_claimed;
 end;
 $$;
 
@@ -455,7 +490,7 @@ create policy entitlements_select_own on public.entitlements
 -- inquiries: leer y borrar lo propio siempre (exportación/borrado RGPD);
 -- crear y editar solo con derecho activo
 grant select, insert, delete on public.inquiries to authenticated;
-grant update (customer_label, channel, summary, notes, status, follow_up_on, archived_at) on public.inquiries to authenticated;
+grant update (customer_label, channel, summary, notes, status, follow_up_on) on public.inquiries to authenticated;
 
 create policy inquiries_select_own on public.inquiries
   for select to authenticated using (user_id = (select auth.uid()));
@@ -483,3 +518,4 @@ create policy response_templates_select_with_access on public.response_templates
 -- sin grants ni políticas → solo service role.
 
 grant execute on function public.has_access(text) to authenticated;
+grant execute on function public.claim_entitlements() to authenticated;

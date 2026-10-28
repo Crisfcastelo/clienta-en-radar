@@ -1,6 +1,7 @@
 import "server-only";
 import { connection } from "next/server";
 import { DEMO_PROFILE } from "./demo-profile";
+import { mockProfileState } from "./mock-profile";
 
 export interface CurrentUser {
   id: string;
@@ -9,6 +10,8 @@ export interface CurrentUser {
   businessName: string | null;
   timezone: string;
   retentionDays: number | null;
+  /** Nulo hasta que termina (o salta) la primera configuración. */
+  onboardedAt: string | null;
 }
 
 /**
@@ -19,5 +22,5 @@ export interface CurrentUser {
 export async function requireUser(): Promise<CurrentUser> {
   // Todo lo privado se genera en cada petición, nunca en el build ni en caché.
   await connection();
-  return { ...DEMO_PROFILE };
+  return { ...DEMO_PROFILE, onboardedAt: mockProfileState().onboardedAt };
 }

@@ -3,22 +3,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
+import { Notice } from "@/components/ui/notice";
+import { requireUser } from "@/features/account/session";
 import { availableResources } from "@/features/help/resources";
+import { inquiries } from "@/features/inquiries/data";
+import { MESSAGES } from "@/features/inquiries/domain/labels";
 
-export const metadata: Metadata = { title: "Ayuda" };
+export const metadata: Metadata = { title: "Ayuda y recursos" };
 
 const STEPS = [
   {
-    title: "Apunta cada consulta",
-    body: "Cuando alguien te escriba y no puedas contestar en ese momento, añádela con un nombre y una frase. Diez segundos.",
+    title: "Apunta lo imprescindible",
+    body: "Cuando alguien te escriba y no puedas contestar en ese momento, añádela con un nombre y lo que necesita. Diez segundos.",
   },
   {
-    title: "Cambia el estado cuando avances",
-    body: "¿Ya contestaste? Pásala a «Esperando respuesta». Si quieres volver a escribirle, ponle una fecha de revisión.",
+    title: "Cuando respondas, márcalo",
+    body: "Pulsa «Marcar como respondida». Si quieres retomarla más adelante, usa «Preparar seguimiento» y elige el día.",
   },
   {
     title: "Mira Hoy y olvídate del resto",
-    body: "Hoy te enseña solo lo que necesita tu atención. Cuando algo esté cerrado, márcalo como resuelto.",
+    body: "Hoy te enseña solo lo que necesita tu atención. Cuando algo esté cerrado, pulsa «Resolver»: queda en tu historial.",
   },
 ];
 
@@ -33,11 +37,11 @@ const FAQ = [
   },
   {
     q: "¿Qué pasa cuando llega la fecha de revisión?",
-    a: "La consulta aparece arriba en Hoy con el aviso «Esta conversación necesita una revisión». La app no cambia el estado por su cuenta.",
+    a: "La consulta aparece en «Para revisar». Si se te pasa el día, sigue ahí con el aviso «Esta conversación necesita una revisión» hasta que hagas algo con ella. La app no cambia el estado por su cuenta.",
   },
   {
-    q: "¿Archivar es lo mismo que eliminar?",
-    a: "No. Archivar la quita de tus listas pero puedes recuperarla. Eliminar la borra para siempre.",
+    q: "¿Qué pasa con las consultas resueltas?",
+    a: "Siguen guardadas en tu historial. Las encuentras en Consultas, con el filtro «Resueltas», y puedes reabrirlas cuando quieras.",
   },
   {
     q: "¿Qué datos debería apuntar?",
@@ -53,12 +57,24 @@ const FAQ = [
   },
 ];
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  await requireUser();
   const resources = availableResources();
+  const savedCount = (await inquiries().list()).length;
 
   return (
     <div className="mx-auto max-w-2xl space-y-10">
-      <PageHeader title="Ayuda" intro="Todo lo que necesitas para empezar, en dos minutos." />
+      <PageHeader
+        title="Todo lo que necesitas, a mano"
+        intro={
+          // El subtítulo definitivo promete recursos: solo se muestra cuando ya hay alguno disponible.
+          resources.length > 0
+            ? "Respuestas preparadas, ayuda para organizar WhatsApp y mensajes de seguimiento."
+            : "Cómo funciona, cómo instalarla y respuestas a las dudas más habituales."
+        }
+      />
+
+      {savedCount < 3 ? <Notice tone="info">{MESSAGES.firstSteps}</Notice> : null}
 
       <section aria-labelledby="bienvenida" className="space-y-4">
         <h2 id="bienvenida" className="text-2xl font-semibold">

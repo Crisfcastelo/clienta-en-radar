@@ -23,17 +23,17 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
   const all = await inquiries().list();
   const results = sortByNextAction(filterInquiries(all, filters, today, user.timezone), today);
   const filtered = hasActiveFilters(filters);
-  const archivedView = filters.view === "archivadas";
 
   return (
     <div>
       <PageHeader
-        title="Consultas"
+        title="Todas tus consultas"
+        intro="Encuentra una conversación y comprueba en qué punto está."
         actions={
           <div className="hidden md:block">
             <ButtonLink href="/consultas/nueva">
               <Plus aria-hidden className="size-5" />
-              Nueva consulta
+              Añadir consulta
             </ButtonLink>
           </div>
         }
@@ -45,26 +45,16 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
         </Notice>
       ) : null}
 
-      <nav aria-label="Vista" className="mb-4 inline-flex rounded-full border border-borde bg-superficie p-1">
-        <ViewLink href="/consultas" active={!archivedView}>
-          Activas
-        </ViewLink>
-        <ViewLink href="/consultas?vista=archivadas" active={archivedView}>
-          Archivadas
-        </ViewLink>
-      </nav>
-
       <FiltersForm key={JSON.stringify(filters)} filters={filters} />
 
       <div className="mb-3 mt-6 flex flex-wrap items-baseline justify-between gap-2">
         <p role="status" className="font-semibold">
           {results.length === 1 ? "1 consulta" : `${results.length} consultas`}
-          {archivedView ? " archivadas" : ""}
           <span className="font-normal text-chocolate-suave"> · ordenadas por próxima acción</span>
         </p>
         {filtered ? (
           <Link
-            href={archivedView ? "/consultas?vista=archivadas" : "/consultas"}
+            href="/consultas"
             className="inline-flex min-h-11 items-center font-semibold text-oliva underline underline-offset-4"
           >
             Quitar filtros
@@ -73,16 +63,15 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
       </div>
 
       {results.length === 0 ? (
-        <Card className="p-6 text-center">
+        <Card className="space-y-3 p-6 text-center">
           <p className="text-lg font-semibold">
-            {filtered
-              ? "No hay consultas con estos filtros."
-              : archivedView
-                ? "No tienes consultas archivadas."
-                : "Todo al día por aquí."}
+            {filtered ? "No hay consultas con estos filtros." : "Aún no tienes consultas guardadas."}
           </p>
-          {!filtered && !archivedView ? (
-            <p className="mt-1 text-chocolate-suave">Cuando te escriba alguien, añádela con «Nueva consulta».</p>
+          {!filtered ? (
+            <ButtonLink href="/consultas/nueva">
+              <Plus aria-hidden className="size-5" />
+              Añadir consulta
+            </ButtonLink>
           ) : null}
         </Card>
       ) : (
@@ -95,17 +84,5 @@ export default async function InquiriesPage({ searchParams }: PageProps<"/consul
         </ul>
       )}
     </div>
-  );
-}
-
-function ViewLink({ href, active, children }: { href: string; active: boolean; children: string }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={`inline-flex min-h-11 items-center rounded-full px-5 font-semibold ${active ? "bg-oliva text-white" : "text-chocolate hover:bg-neutro"}`}
-    >
-      {children}
-    </Link>
   );
 }

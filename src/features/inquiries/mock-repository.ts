@@ -28,7 +28,7 @@ function daysAgo(days: number, hour = 10): string {
 
 function seed(): Map<string, Inquiry> {
   const today = todayIn(DEMO_PROFILE.timezone);
-  const rows: Array<Omit<Inquiry, "updatedAt" | "resolvedAt" | "archivedAt"> & { archived?: boolean }> = [
+  const rows: Array<Omit<Inquiry, "updatedAt" | "resolvedAt">> = [
     {
       id: "0b8f6a52-1f43-4c55-9b0e-6d7c1a2e3f01",
       customerLabel: "Lucía (vestido de novia)",
@@ -99,25 +99,14 @@ function seed(): Map<string, Inquiry> {
       followUpOn: null,
       createdAt: daysAgo(15),
     },
-    {
-      id: "0b8f6a52-1f43-4c55-9b0e-6d7c1a2e3f08",
-      customerLabel: "Cuenta de promociones",
-      channel: "instagram",
-      summary: "Mensaje automático ofreciendo seguidores.",
-      notes: null,
-      status: "por_responder",
-      followUpOn: null,
-      createdAt: daysAgo(20),
-      archived: true,
-    },
   ];
 
   return new Map(
-    rows.map(({ archived, ...row }) => {
+    rows.map((row) => {
       const inquiry: Inquiry = {
         ...row,
-        resolvedAt: row.status === "resuelta" ? daysAgo(2) : null,
-        archivedAt: archived ? daysAgo(19) : null,
+        // Resuelta hace un rato: cuenta en "Resueltas esta semana" sea el día que sea.
+        resolvedAt: row.status === "resuelta" ? new Date(Date.now() - 3_600_000).toISOString() : null,
         updatedAt: row.createdAt,
       };
       return [inquiry.id, inquiry];
@@ -152,7 +141,6 @@ export const mockInquiryRepository: InquiryRepository = {
       ...input,
       status: "por_responder",
       resolvedAt: null,
-      archivedAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -165,19 +153,9 @@ export const mockInquiryRepository: InquiryRepository = {
     return current ? touch(current, fields) : null;
   },
 
-  async setStatus(id, status) {
+  async changeStatus(id, change) {
     const current = store().inquiries.get(id);
-    return current ? touch(current, { status }) : null;
-  },
-
-  async setFollowUp(id, followUpOn) {
-    const current = store().inquiries.get(id);
-    return current ? touch(current, { followUpOn }) : null;
-  },
-
-  async setArchived(id, archived) {
-    const current = store().inquiries.get(id);
-    return current ? touch(current, { archivedAt: archived ? new Date().toISOString() : null }) : null;
+    return current ? touch(current, change) : null;
   },
 
   async remove(id) {

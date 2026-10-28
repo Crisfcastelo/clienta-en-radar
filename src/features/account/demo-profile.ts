@@ -7,5 +7,6 @@ export const DEMO_PROFILE = {
   displayName: "Marta",
   businessName: "Estudio Marta",
   timezone: "Europe/Madrid",
-  retentionDays: 365 as number | null,
+  // Por defecto no se borra nada: las resueltas quedan en el historial.
+  retentionDays: null as number | null,
 } as const;

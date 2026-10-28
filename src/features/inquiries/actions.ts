@@ -4,17 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/features/account/session";
 import { inquiries } from "./data";
-import { MESSAGES, STATUS_LABELS } from "./domain/labels";
+import { formatFollowUp, todayIn } from "@/lib/dates";
+import { MESSAGES } from "./domain/labels";
+import { applyAction } from "./domain/transitions";
+import type { InquiryAction } from "./domain/transitions";
 import {
   createInquirySchema,
   formDataToRecord,
   idSchema,
-  statusChangeSchema,
+  quickActionSchema,
   toFieldErrors,
   updateInquirySchema,
 } from "./schema";
 import type { FieldErrors } from "./schema";
-import { isValidIsoDate } from "@/lib/dates";
 
 export type FormState =
   | { status: "idle" }
@@ -55,7 +57,7 @@ export async function createInquiryAction(_prev: FormState, formData: FormData):
   try {
     const { inquiry } = await inquiries().create(parsed.data);
     refreshAll();
-    return { status: "success", message: `Guardada: ${inquiry.customerLabel}.`, savedId: inquiry.id };
+    return { status: "success", message: MESSAGES.saved, savedId: inquiry.id };
   } catch {
     return {
       status: "error",
@@ -91,69 +93,32 @@ export async function updateInquiryAction(id: string, _prev: FormState, formData
   };
 }
 
-export async function changeStatusAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireUser();
-  const parsed = statusChangeSchema.safeParse(formDataToRecord(formData, ["id", "status"]));
-  if (!parsed.success) return { status: "error", message: "Elige un estado de la lista." };
-
-  const updated = await inquiries().setStatus(parsed.data.id, parsed.data.status);
-  if (!updated) return { status: "error", message: NOT_FOUND };
-
-  refreshAll();
-  return {
-    status: "success",
-    message:
-      parsed.data.status === "resuelta"
-        ? MESSAGES.resolved
-        : `${updated.customerLabel}: ${STATUS_LABELS[parsed.data.status].toLowerCase()}.`,
-  };
-}
-
-export async function setFollowUpAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireUser();
-  const parsedId = idSchema.safeParse(formDataToRecord(formData, ["id"]));
-  const raw = formData.get("followUpOn");
-  const followUpOn = typeof raw === "string" && raw !== "" ? raw : null;
-  if (!parsedId.success || (followUpOn !== null && !isValidIsoDate(followUpOn))) {
-    return { status: "error", message: "Esa fecha no es válida." };
+export async function inquiryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const parsed = quickActionSchema.safeParse(formDataToRecord(formData, ["id", "action", "followUpOn"]));
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.issues[0]?.message ?? "No se pudo hacer este cambio." };
   }
 
-  const updated = await inquiries().setFollowUp(parsedId.data.id, followUpOn);
+  const { id, action, followUpOn } = parsed.data;
+  const updated = await inquiries().changeStatus(id, applyAction(action, followUpOn));
   if (!updated) return { status: "error", message: NOT_FOUND };
 
   refreshAll();
-  return {
-    status: "success",
-    message: followUpOn ? "Fecha de seguimiento guardada." : "Fecha de seguimiento quitada.",
-  };
+  return { status: "success", message: actionMessage(action, updated.customerLabel, followUpOn, user.timezone) };
 }
 
-export async function setArchivedAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireUser();
-  const parsed = idSchema.safeParse(formDataToRecord(formData, ["id"]));
-  const archived = formData.get("archived") === "true";
-  if (!parsed.success) return { status: "error", message: NOT_FOUND };
-
-  const updated = await inquiries().setArchived(parsed.data.id, archived);
-  if (!updated) return { status: "error", message: NOT_FOUND };
-
-  refreshAll();
-  return { status: "success", message: archived ? "Consulta archivada." : "Consulta recuperada del archivo." };
-}
-
-export async function reopenAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireUser();
-  const parsed = idSchema.safeParse(formDataToRecord(formData, ["id"]));
-  if (!parsed.success) return { status: "error", message: NOT_FOUND };
-
-  const repo = inquiries();
-  const current = await repo.get(parsed.data.id);
-  if (!current) return { status: "error", message: NOT_FOUND };
-  if (current.archivedAt) await repo.setArchived(current.id, false);
-  if (current.status === "resuelta") await repo.setStatus(current.id, "por_responder");
-
-  refreshAll();
-  return { status: "success", message: "Consulta reabierta. Vuelve a estar por responder." };
+function actionMessage(action: InquiryAction, label: string, followUpOn: string | null, timeZone: string): string {
+  switch (action) {
+    case "respond":
+      return `${label}: marcada como respondida.`;
+    case "prepare_follow_up":
+      return `Seguimiento preparado: revisar ${followUpOn ? formatFollowUp(followUpOn, todayIn(timeZone)) : "hoy"}.`;
+    case "resolve":
+      return MESSAGES.resolved;
+    case "reopen":
+      return "Consulta reabierta. Vuelve a estar por responder.";
+  }
 }
 
 export async function deleteInquiryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

@@ -6,7 +6,7 @@ import { MESSAGES } from "../domain/labels";
 import { followUpState } from "../domain/priority";
 import type { Inquiry, IsoDate } from "../domain/types";
 import { ChannelTag } from "./channel-tag";
-import { QuickStatus } from "./quick-status";
+import { QuickActions } from "./quick-actions";
 import { StatusBadge } from "./status-badge";
 
 interface Props {
@@ -17,8 +17,8 @@ interface Props {
 }
 
 /**
- * Tarjeta compacta. Toda la tarjeta enlaza al detalle (enlace "estirado"),
- * y el botón de cambiar estado queda por encima para poder pulsarlo aparte.
+ * Tarjeta compacta. Toda la tarjeta enlaza al detalle ("Ver detalle", con un enlace
+ * estirado) y las acciones rápidas quedan por encima para poder pulsarlas aparte.
  */
 export function InquiryCard({ inquiry, today, timeZone, headingLevel: Heading = "h3" }: Props) {
   const state = followUpState(inquiry, today);
@@ -52,21 +52,22 @@ export function InquiryCard({ inquiry, today, timeZone, headingLevel: Heading = 
         </p>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          {inquiry.followUpOn && !overdue && state !== "none" ? (
-            <span className="inline-flex items-center gap-1 font-semibold">
-              <CalendarClock aria-hidden className="size-4" />
-              Revisar {formatFollowUp(inquiry.followUpOn, today)}
-            </span>
-          ) : null}
-          <span className="inline-flex items-center gap-1 text-chocolate-suave">
-            <Inbox aria-hidden className="size-4" />
-            Recibida {formatReceived(inquiry.createdAt, timeZone)}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        {inquiry.followUpOn && !overdue && state !== "none" ? (
+          <span className="inline-flex items-center gap-1 font-semibold">
+            <CalendarClock aria-hidden className="size-4" />
+            Revisar {formatFollowUp(inquiry.followUpOn, today)}
           </span>
-          <ChannelTag channel={inquiry.channel} />
-        </div>
-        <QuickStatus id={inquiry.id} customerLabel={inquiry.customerLabel} status={inquiry.status} />
+        ) : null}
+        <span className="inline-flex items-center gap-1 text-chocolate-suave">
+          <Inbox aria-hidden className="size-4" />
+          Recibida {formatReceived(inquiry.createdAt, timeZone)}
+        </span>
+        <ChannelTag channel={inquiry.channel} />
+      </div>
+
+      <div className="mt-3">
+        <QuickActions id={inquiry.id} customerLabel={inquiry.customerLabel} status={inquiry.status} today={today} />
       </div>
     </Card>
   );

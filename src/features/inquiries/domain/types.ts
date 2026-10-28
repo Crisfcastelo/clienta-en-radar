@@ -18,7 +18,6 @@ export interface Inquiry {
   status: InquiryStatus;
   followUpOn: IsoDate | null;
   resolvedAt: string | null;
-  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,5 +1,6 @@
 import { Settings } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { BottomNav, SideNav } from "@/components/app-nav";
 import { BrandName } from "@/components/brand";
 import { Toaster } from "@/components/toaster";
@@ -8,7 +9,8 @@ import { requireUser } from "@/features/account/session";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   // Fase 3: aquí se verifica sesión y derecho de acceso antes de pintar nada privado.
-  await requireUser();
+  const user = await requireUser();
+  if (!user.onboardedAt) redirect("/bienvenida");
 
   return (
     <div className="min-h-dvh">

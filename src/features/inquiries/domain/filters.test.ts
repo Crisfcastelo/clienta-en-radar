@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { escapeLikePattern, filterInquiries, hasActiveFilters, normalizeForSearch, parseFilters } from "./filters";
+import {
+  escapeLikePattern,
+  filterInquiries,
+  filtersHref,
+  hasActiveFilters,
+  moreFiltersCount,
+  normalizeForSearch,
+  parseFilters,
+} from "./filters";
 import { makeInquiry } from "./test-factory";
 
 const TODAY = "2026-10-28";
@@ -7,24 +15,20 @@ const TZ = "Europe/Madrid";
 
 describe("parseFilters", () => {
   it("lee valores válidos de la URL", () => {
-    expect(
-      parseFilters({ q: "  lucía ", estado: "resuelta", canal: "instagram", fecha: "7d", vista: "archivadas" }),
-    ).toEqual({
+    expect(parseFilters({ q: "  lucía ", estado: "resuelta", canal: "instagram", fecha: "7d" })).toEqual({
       q: "lucía",
       status: "resuelta",
       channel: "instagram",
       range: "7d",
-      view: "archivadas",
     });
   });
 
   it("ignora valores desconocidos o manipulados", () => {
-    expect(parseFilters({ estado: "borrada", canal: "telegram", fecha: "ayer", vista: "todo" })).toEqual({
+    expect(parseFilters({ estado: "borrada", canal: "telegram", fecha: "ayer" })).toEqual({
       q: "",
       status: null,
       channel: null,
       range: "todas",
-      view: "activas",
     });
   });
 
@@ -35,6 +39,15 @@ describe("parseFilters", () => {
   it("detecta si hay filtros activos", () => {
     expect(hasActiveFilters(parseFilters({}))).toBe(false);
     expect(hasActiveFilters(parseFilters({ canal: "email" }))).toBe(true);
+    expect(moreFiltersCount(parseFilters({ estado: "resuelta" }))).toBe(0);
+    expect(moreFiltersCount(parseFilters({ canal: "email", fecha: "7d" }))).toBe(2);
+  });
+
+  it("construye la URL solo con los filtros puestos", () => {
+    expect(filtersHref(parseFilters({}))).toBe("/consultas");
+    expect(filtersHref({ ...parseFilters({ canal: "email", q: "ana" }), status: "resuelta" })).toBe(
+      "/consultas?q=ana&estado=resuelta&canal=email",
+    );
   });
 });
 
@@ -68,20 +81,20 @@ describe("filterInquiries", () => {
       status: "esperando_respuesta",
       createdAt: "2026-10-10T08:00:00Z",
     }),
-    makeInquiry({ customerLabel: "archivada", archivedAt: "2026-10-27T08:00:00Z", createdAt: "2026-09-01T08:00:00Z" }),
+    makeInquiry({
+      customerLabel: "resuelta",
+      channel: "email",
+      status: "resuelta",
+      resolvedAt: "2026-10-27T08:00:00Z",
+      createdAt: "2026-09-01T08:00:00Z",
+    }),
   ];
 
-  it("por defecto muestra solo las activas", () => {
-    expect(filterInquiries(list, parseFilters({}), TODAY, TZ).map((i) => i.customerLabel)).toEqual([
-      "activa wa",
-      "activa ig",
+  it("'Todas' incluye también las resueltas: quedan en el historial", () => {
+    expect(filterInquiries(list, parseFilters({}), TODAY, TZ)).toHaveLength(3);
+    expect(filterInquiries(list, parseFilters({ estado: "resuelta" }), TODAY, TZ).map((i) => i.customerLabel)).toEqual([
+      "resuelta",
     ]);
-  });
-
-  it("vista de archivadas", () => {
-    expect(filterInquiries(list, parseFilters({ vista: "archivadas" }), TODAY, TZ).map((i) => i.customerLabel)).toEqual(
-      ["archivada"],
-    );
   });
 
   it("filtra por estado y canal", () => {
@@ -94,6 +107,7 @@ describe("filterInquiries", () => {
       "activa wa",
     ]);
     expect(filterInquiries(list, parseFilters({ fecha: "30d" }), TODAY, TZ)).toHaveLength(2);
+    expect(filterInquiries(list, parseFilters({ fecha: "todas" }), TODAY, TZ)).toHaveLength(3);
   });
 
   it("'hoy' usa el día de Madrid, no el de UTC", () => {

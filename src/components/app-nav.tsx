@@ -36,7 +36,7 @@ export function BottomNav() {
             <span className="flex size-14 items-center justify-center rounded-full bg-oliva text-white shadow-lg ring-4 ring-crema">
               <Plus aria-hidden className="size-7" />
             </span>
-            Nueva
+            Añadir
           </Link>
         </li>
         {ITEMS.slice(2).map((item) => (
@@ -73,7 +73,7 @@ export function SideNav() {
         className="mb-6 flex min-h-14 items-center justify-center gap-2 rounded-full bg-oliva px-5 text-lg font-semibold text-white hover:bg-oliva-oscuro"
       >
         <Plus aria-hidden className="size-6" />
-        Nueva consulta
+        Añadir consulta
       </Link>
       <ul className="space-y-1">
         {links.map(({ href, label, Icon }) => {

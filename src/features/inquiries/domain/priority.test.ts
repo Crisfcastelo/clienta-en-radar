@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buildTodaySummary, followUpState, isOpen, sortByNextAction } from "./priority";
+import { buildTodaySummary, followUpState, isOpen, needsReview, sortByNextAction } from "./priority";
 import { makeInquiry } from "./test-factory";
 
+// Miércoles 28 de octubre de 2026. La semana empieza el lunes 26.
 const TODAY = "2026-10-28";
+const TZ = "Europe/Madrid";
 
 describe("isOpen", () => {
-  it("una resuelta o archivada no está abierta", () => {
+  it("solo una resuelta deja de estar abierta", () => {
     expect(isOpen(makeInquiry({ status: "resuelta", resolvedAt: "2026-10-27T10:00:00Z" }))).toBe(false);
-    expect(isOpen(makeInquiry({ archivedAt: "2026-10-27T10:00:00Z" }))).toBe(false);
     expect(isOpen(makeInquiry({ status: "esperando_respuesta" }))).toBe(true);
   });
 });
@@ -32,83 +33,94 @@ describe("followUpState", () => {
   });
 });
 
+describe("needsReview", () => {
+  it("entra en Para revisar con fecha de hoy o pasada", () => {
+    expect(needsReview(makeInquiry({ status: "esperando_respuesta", followUpOn: TODAY }), TODAY)).toBe(true);
+    expect(needsReview(makeInquiry({ status: "esperando_respuesta", followUpOn: "2026-10-01" }), TODAY)).toBe(true);
+    expect(needsReview(makeInquiry({ status: "esperando_respuesta", followUpOn: "2026-11-01" }), TODAY)).toBe(false);
+  });
+
+  it("Hacer seguimiento sin fecha no se queda fuera del radar", () => {
+    expect(needsReview(makeInquiry({ status: "hacer_seguimiento" }), TODAY)).toBe(true);
+    expect(needsReview(makeInquiry({ status: "esperando_respuesta" }), TODAY)).toBe(false);
+  });
+});
+
 describe("buildTodaySummary", () => {
-  it("ordena vencidas, luego hoy, luego por responder", () => {
-    const pendingOld = makeInquiry({ customerLabel: "pendiente antigua", createdAt: "2026-10-01T09:00:00Z" });
-    const pendingNew = makeInquiry({ customerLabel: "pendiente nueva", createdAt: "2026-10-25T09:00:00Z" });
-    const dueToday = makeInquiry({ customerLabel: "hoy", status: "esperando_respuesta", followUpOn: TODAY });
-    const overdueRecent = makeInquiry({
-      customerLabel: "vencida ayer",
-      status: "hacer_seguimiento",
-      followUpOn: "2026-10-27",
-    });
-    const overdueOld = makeInquiry({
-      customerLabel: "vencida hace días",
-      status: "esperando_respuesta",
-      followUpOn: "2026-10-20",
-    });
-    const waitingFuture = makeInquiry({
-      customerLabel: "futura",
-      status: "esperando_respuesta",
-      followUpOn: "2026-11-05",
-    });
-    const resolved = makeInquiry({ customerLabel: "resuelta", status: "resuelta", resolvedAt: "x" });
-    const archived = makeInquiry({ customerLabel: "archivada", archivedAt: "x" });
-
-    const summary = buildTodaySummary(
-      [pendingNew, resolved, dueToday, overdueRecent, archived, pendingOld, waitingFuture, overdueOld],
-      TODAY,
-    );
-
-    expect(summary.actions.map((a) => a.inquiry.customerLabel)).toEqual([
-      "vencida hace días",
-      "vencida ayer",
-      "hoy",
-      "pendiente antigua",
-      "pendiente nueva",
-    ]);
-    expect(summary.actions.map((a) => a.reason)).toEqual(["overdue", "overdue", "due_today", "pending", "pending"]);
+  const pendingOld = makeInquiry({ customerLabel: "pendiente antigua", createdAt: "2026-10-01T09:00:00Z" });
+  const pendingNew = makeInquiry({ customerLabel: "pendiente nueva", createdAt: "2026-10-25T09:00:00Z" });
+  const dueToday = makeInquiry({ customerLabel: "hoy", status: "esperando_respuesta", followUpOn: TODAY });
+  const overdueRecent = makeInquiry({
+    customerLabel: "vencida ayer",
+    status: "hacer_seguimiento",
+    followUpOn: "2026-10-27",
+  });
+  const overdueOld = makeInquiry({
+    customerLabel: "vencida hace días",
+    status: "esperando_respuesta",
+    followUpOn: "2026-10-20",
+  });
+  const waitingFuture = makeInquiry({
+    customerLabel: "futura",
+    status: "esperando_respuesta",
+    followUpOn: "2026-11-05",
+  });
+  const resolvedThisWeek = makeInquiry({
+    customerLabel: "resuelta el lunes",
+    status: "resuelta",
+    resolvedAt: "2026-10-26T08:00:00Z",
+  });
+  const resolvedLastWeek = makeInquiry({
+    customerLabel: "resuelta el domingo",
+    status: "resuelta",
+    // 22:30 UTC del sábado 24 = domingo 25 a las 00:30 en Madrid: semana anterior.
+    resolvedAt: "2026-10-24T22:30:00Z",
   });
 
-  it("cuenta por responder y en seguimiento sin incluir resueltas ni archivadas", () => {
-    const summary = buildTodaySummary(
-      [
-        makeInquiry(),
-        makeInquiry(),
-        makeInquiry({ archivedAt: "x" }),
-        makeInquiry({ status: "esperando_respuesta" }),
-        makeInquiry({ status: "hacer_seguimiento" }),
-        makeInquiry({ status: "hacer_seguimiento", archivedAt: "x" }),
-        makeInquiry({ status: "resuelta", resolvedAt: "x" }),
-      ],
-      TODAY,
-    );
+  const summary = buildTodaySummary(
+    [pendingNew, resolvedThisWeek, dueToday, overdueRecent, resolvedLastWeek, pendingOld, waitingFuture, overdueOld],
+    TODAY,
+    TZ,
+  );
+
+  it("Para revisar: vencidas primero (la más antigua arriba) y después las de hoy", () => {
+    expect(summary.toReview.map((i) => i.customerLabel)).toEqual(["vencida hace días", "vencida ayer", "hoy"]);
+  });
+
+  it("Por responder: la más antigua primero", () => {
+    expect(summary.toAnswer.map((i) => i.customerLabel)).toEqual(["pendiente antigua", "pendiente nueva"]);
+  });
+
+  it("indicadores: por responder, para revisar y resueltas esta semana", () => {
     expect(summary.pendingCount).toBe(2);
-    expect(summary.followingCount).toBe(2);
+    expect(summary.reviewCount).toBe(3);
+    expect(summary.resolvedThisWeek).toBe(1);
   });
 
-  it("una por responder con seguimiento vencido aparece una sola vez, como vencida", () => {
+  it("una por responder con revisión vencida aparece una sola vez, en Para revisar", () => {
     const inquiry = makeInquiry({ followUpOn: "2026-10-26" });
-    const summary = buildTodaySummary([inquiry], TODAY);
-    expect(summary.actions).toHaveLength(1);
-    expect(summary.actions[0]?.reason).toBe("overdue");
+    const result = buildTodaySummary([inquiry], TODAY, TZ);
+    expect(result.toReview).toHaveLength(1);
+    expect(result.toAnswer).toHaveLength(0);
+    expect(result.pendingCount).toBe(1);
   });
 
-  it("sin consultas: lista vacía y marca de primer acceso", () => {
-    const summary = buildTodaySummary([], TODAY);
-    expect(summary.actions).toEqual([]);
-    expect(summary.hasAnyInquiry).toBe(false);
+  it("sin consultas: listas vacías y marca de primer acceso", () => {
+    const result = buildTodaySummary([], TODAY, TZ);
+    expect(result.toReview).toEqual([]);
+    expect(result.toAnswer).toEqual([]);
+    expect(result.hasAnyInquiry).toBe(false);
   });
 
-  it("solo resueltas: lista vacía pero no es primer acceso", () => {
-    const summary = buildTodaySummary([makeInquiry({ status: "resuelta", resolvedAt: "x" })], TODAY);
-    expect(summary.actions).toEqual([]);
-    expect(summary.hasAnyInquiry).toBe(true);
+  it("solo resueltas: nada pendiente pero no es primer acceso", () => {
+    const result = buildTodaySummary([resolvedThisWeek], TODAY, TZ);
+    expect(result.toReview).toEqual([]);
+    expect(result.hasAnyInquiry).toBe(true);
   });
 });
 
 describe("sortByNextAction", () => {
-  it("pone lo urgente arriba y lo cerrado al final", () => {
+  it("pone lo urgente arriba y lo resuelto al final", () => {
     const list = [
       makeInquiry({ customerLabel: "resuelta", status: "resuelta", resolvedAt: "x" }),
       makeInquiry({ customerLabel: "esperando sin fecha", status: "esperando_respuesta" }),

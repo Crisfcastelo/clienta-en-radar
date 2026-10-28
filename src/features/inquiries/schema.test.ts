@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInquirySchema, statusChangeSchema, toFieldErrors, updateInquirySchema } from "./schema";
+import { createInquirySchema, quickActionSchema, toFieldErrors, updateInquirySchema } from "./schema";
 
 const VALID_ID = "3f0c6a8e-6b1f-4c1e-9a55-2f3b1d0e7c11";
 
@@ -31,7 +31,7 @@ describe("createInquirySchema", () => {
     expect(result.success).toBe(false);
     expect(toFieldErrors(result.error!)).toEqual({
       customerLabel: "Escribe un nombre o una referencia.",
-      summary: "Cuenta en pocas palabras qué te han preguntado.",
+      summary: "Cuenta en pocas palabras qué necesita.",
     });
   });
 
@@ -75,9 +75,25 @@ describe("updateInquirySchema", () => {
   });
 });
 
-describe("statusChangeSchema", () => {
-  it("rechaza estados inventados", () => {
-    expect(statusChangeSchema.safeParse({ id: VALID_ID, status: "hacer_seguimiento" }).success).toBe(true);
-    expect(statusChangeSchema.safeParse({ id: VALID_ID, status: "pagada" }).success).toBe(false);
+describe("quickActionSchema", () => {
+  it("acepta acciones conocidas", () => {
+    expect(quickActionSchema.safeParse({ id: VALID_ID, action: "respond" }).success).toBe(true);
+    expect(quickActionSchema.safeParse({ id: VALID_ID, action: "resolve", followUpOn: "" }).success).toBe(true);
+  });
+
+  it("rechaza acciones inventadas", () => {
+    expect(quickActionSchema.safeParse({ id: VALID_ID, action: "pagar" }).success).toBe(false);
+  });
+
+  it("preparar seguimiento exige una fecha válida", () => {
+    const missing = quickActionSchema.safeParse({ id: VALID_ID, action: "prepare_follow_up", followUpOn: "" });
+    expect(missing.success).toBe(false);
+    expect(toFieldErrors(missing.error!).followUpOn).toBe("Elige cuándo quieres retomarla.");
+    expect(
+      quickActionSchema.safeParse({ id: VALID_ID, action: "prepare_follow_up", followUpOn: "2026-13-01" }).success,
+    ).toBe(false);
+    expect(
+      quickActionSchema.safeParse({ id: VALID_ID, action: "prepare_follow_up", followUpOn: "2026-11-02" }).success,
+    ).toBe(true);
   });
 });

@@ -1,11 +1,11 @@
-import { daysBetween } from "@/lib/dates";
+import { daysBetween, startOfWeek, toIsoDateIn } from "@/lib/dates";
 import type { Inquiry, IsoDate } from "./types";
 
 export type FollowUpState = "none" | "overdue" | "today" | "upcoming";
 
-/** Abierta = ni resuelta ni archivada. Es lo único que puede pedir atención. */
+/** Abierta = no resuelta. Es lo único que puede pedir atención. */
 export function isOpen(inquiry: Inquiry): boolean {
-  return inquiry.status !== "resuelta" && inquiry.archivedAt === null;
+  return inquiry.status !== "resuelta";
 }
 
 export function followUpState(inquiry: Inquiry, today: IsoDate): FollowUpState {
@@ -16,55 +16,49 @@ export function followUpState(inquiry: Inquiry, today: IsoDate): FollowUpState {
   return "upcoming";
 }
 
-export type TodayReason = "overdue" | "due_today" | "pending";
-
-export interface TodayAction {
-  inquiry: Inquiry;
-  reason: TodayReason;
+/**
+ * "Para revisar": tiene la fecha de revisión hoy o ya pasada, o está en
+ * Hacer seguimiento sin fecha (le toca a ella y no debe quedar fuera del radar).
+ */
+export function needsReview(inquiry: Inquiry, today: IsoDate): boolean {
+  if (!isOpen(inquiry)) return false;
+  const state = followUpState(inquiry, today);
+  if (state === "overdue" || state === "today") return true;
+  return inquiry.status === "hacer_seguimiento" && !inquiry.followUpOn;
 }
 
 export interface TodaySummary {
+  /** Revisiones de hoy o vencidas; las vencidas primero. */
+  toReview: Inquiry[];
+  /** Por responder que no están ya en revisión; la más antigua primero. */
+  toAnswer: Inquiry[];
   pendingCount: number;
-  followingCount: number;
-  actions: TodayAction[];
+  reviewCount: number;
+  resolvedThisWeek: number;
   hasAnyInquiry: boolean;
 }
 
 const byCreatedAsc = (a: Inquiry, b: Inquiry) => a.createdAt.localeCompare(b.createdAt);
 
-/**
- * Lo que hay que mirar hoy, en este orden:
- * 1. Seguimientos vencidos (el más antiguo primero).
- * 2. Seguimientos para hoy.
- * 3. Consultas por responder (la más antigua primero).
- * La app nunca cambia el estado por su cuenta: solo ordena y avisa.
- */
-export function buildTodaySummary(inquiries: Inquiry[], today: IsoDate): TodaySummary {
-  const open = inquiries.filter(isOpen);
+/** Lo que necesita atención hoy. La app nunca cambia el estado por su cuenta: solo ordena y avisa. */
+export function buildTodaySummary(inquiries: Inquiry[], today: IsoDate, timeZone: string): TodaySummary {
+  const toReview = inquiries
+    .filter((i) => needsReview(i, today))
+    .sort((a, b) => (a.followUpOn ?? today).localeCompare(b.followUpOn ?? today) || byCreatedAsc(a, b));
+  const reviewIds = new Set(toReview.map((i) => i.id));
+  const toAnswer = inquiries.filter((i) => i.status === "por_responder" && !reviewIds.has(i.id)).sort(byCreatedAsc);
 
-  const overdue: Inquiry[] = [];
-  const dueToday: Inquiry[] = [];
-  const pending: Inquiry[] = [];
-
-  for (const inquiry of open) {
-    const state = followUpState(inquiry, today);
-    if (state === "overdue") overdue.push(inquiry);
-    else if (state === "today") dueToday.push(inquiry);
-    else if (inquiry.status === "por_responder") pending.push(inquiry);
-  }
-
-  overdue.sort((a, b) => (a.followUpOn ?? "").localeCompare(b.followUpOn ?? "") || byCreatedAsc(a, b));
-  dueToday.sort(byCreatedAsc);
-  pending.sort(byCreatedAsc);
+  const weekStart = startOfWeek(today);
+  const resolvedThisWeek = inquiries.filter(
+    (i) => i.status === "resuelta" && i.resolvedAt && toIsoDateIn(new Date(i.resolvedAt), timeZone) >= weekStart,
+  ).length;
 
   return {
-    pendingCount: open.filter((i) => i.status === "por_responder").length,
-    followingCount: open.filter((i) => i.status === "esperando_respuesta" || i.status === "hacer_seguimiento").length,
-    actions: [
-      ...overdue.map((inquiry) => ({ inquiry, reason: "overdue" as const })),
-      ...dueToday.map((inquiry) => ({ inquiry, reason: "due_today" as const })),
-      ...pending.map((inquiry) => ({ inquiry, reason: "pending" as const })),
-    ],
+    toReview,
+    toAnswer,
+    pendingCount: inquiries.filter((i) => i.status === "por_responder").length,
+    reviewCount: toReview.length,
+    resolvedThisWeek,
     hasAnyInquiry: inquiries.length > 0,
   };
 }

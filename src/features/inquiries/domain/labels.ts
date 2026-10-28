@@ -7,13 +7,6 @@ export const STATUS_LABELS: Record<InquiryStatus, string> = {
   resuelta: "Resuelta",
 };
 
-export const STATUS_HINTS: Record<InquiryStatus, string> = {
-  por_responder: "Te toca contestar a ti.",
-  esperando_respuesta: "Ya contestaste. Ahora le toca a ella.",
-  hacer_seguimiento: "Conviene volver a escribirle.",
-  resuelta: "No necesita nada más.",
-};
-
 export const CHANNEL_LABELS: Record<InquiryChannel, string> = {
   whatsapp: "WhatsApp",
   instagram: "Instagram",
@@ -21,10 +14,14 @@ export const CHANNEL_LABELS: Record<InquiryChannel, string> = {
   otro: "Otro",
 };
 
+/** Textos definitivos de docs/contenido-funcional.md. No cambiar sin revisarlo con Crisfcastelo. */
 export const MESSAGES = {
-  firstAccess: "Vamos a quitarte una preocupación de encima. Empieza añadiendo las consultas que tienes pendientes.",
+  tagline: "Tus consultas pendientes, fuera de tu cabeza y bajo control.",
+  welcome: "Vamos a quitarte una preocupación de encima.",
+  firstSteps: "Empieza con tres consultas que tengas pendientes. No necesitas registrar todo lo anterior.",
   emptyTitle: "Todo al día por aquí.",
   emptyBody: "No tienes ninguna consulta pendiente registrada.",
+  saved: "Guardada. Ya no tienes que acordarte de memoria.",
   resolved: "Una cosa menos en la cabeza.",
   overdue: "Esta conversación necesita una revisión.",
 } as const;

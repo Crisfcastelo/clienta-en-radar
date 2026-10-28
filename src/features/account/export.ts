@@ -11,7 +11,6 @@ const CSV_COLUMNS: Array<[string, (i: Inquiry) => string]> = [
   ["Notas", (i) => i.notes ?? ""],
   ["Estado", (i) => STATUS_LABELS[i.status]],
   ["Fecha de seguimiento", (i) => i.followUpOn ?? ""],
-  ["Archivada", (i) => (i.archivedAt ? "Sí" : "No")],
   ["Creada", (i) => i.createdAt],
   ["Actualizada", (i) => i.updatedAt],
   ["Resuelta", (i) => i.resolvedAt ?? ""],

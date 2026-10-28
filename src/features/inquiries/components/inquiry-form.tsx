@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { ChoiceChips } from "@/components/ui/choice-chips";
 import { Field, FieldError, TextArea, TextInput } from "@/components/ui/field";
 import { Notice } from "@/components/ui/notice";
@@ -20,6 +20,8 @@ import { FollowUpInput } from "./follow-up-input";
 type Props = {
   today: string;
   action: (state: FormState, formData: FormData) => Promise<FormState>;
+  /** Qué ofrecer después de guardar una nueva (por defecto, nada: el formulario queda listo para otra). */
+  afterSave?: ReactNode;
 } & (
   { mode: "create"; initialId: string; inquiry?: undefined } | { mode: "edit"; inquiry: Inquiry; initialId?: undefined }
 );
@@ -29,13 +31,14 @@ const initial: FormState = { status: "idle" };
 const FIELD_ORDER = ["customerLabel", "summary", "channel", "followUpOn", "notes", "status"] as const;
 
 export function InquiryForm(props: Props) {
-  const { mode, today, action } = props;
+  const { mode, today, action, afterSave } = props;
   const [formId, setFormId] = useState(props.mode === "create" ? props.initialId : props.inquiry.id);
   const [summaryLength, setSummaryLength] = useState(props.inquiry?.summary.length ?? 0);
   const [state, formAction] = useActionState(async (prev: FormState, formData: FormData) => {
     const result = await action(prev, formData);
     if (result.status === "success") {
-      toast(result.message);
+      // Al crear, la confirmación va en el propio formulario; al editar, en un aviso flotante.
+      if (mode === "edit") toast(result.message);
       if (mode === "create") {
         // Nuevo id para la siguiente consulta: un segundo envío del mismo formulario no duplica.
         setFormId(newId());
@@ -74,11 +77,8 @@ export function InquiryForm(props: Props) {
       {state.status === "error" ? <Notice tone="error">{state.message}</Notice> : null}
       {state.status === "success" && mode === "create" ? (
         <Notice tone="success">
-          {state.message} ¿Añades otra? Si no,{" "}
-          <Link href="/hoy" className="underline underline-offset-4">
-            vuelve a Hoy
-          </Link>
-          .
+          {state.message}
+          {afterSave ? <div className="mt-1 font-normal">{afterSave}</div> : null}
         </Notice>
       ) : null}
 
@@ -101,12 +101,7 @@ export function InquiryForm(props: Props) {
         )}
       </Field>
 
-      <Field
-        id="summary"
-        label="¿Qué te ha preguntado?"
-        hint={`Una frase basta. ${summaryLength}/${LIMITS.summary}`}
-        error={errors.summary}
-      >
+      <Field id="summary" label="Qué necesita" hint={`${summaryLength}/${LIMITS.summary}`} error={errors.summary}>
         {(aria) => (
           <TextArea
             {...aria}
@@ -122,7 +117,7 @@ export function InquiryForm(props: Props) {
       <div className="space-y-2">
         <ChoiceChips
           name="channel"
-          legend="¿Por dónde te escribió?"
+          legend="Canal"
           optional
           defaultValue={value("channel", inquiry?.channel)}
           error={errors.channel}
@@ -150,17 +145,13 @@ export function InquiryForm(props: Props) {
           />
           {errors.status ? <FieldError id="status-error">{errors.status}</FieldError> : null}
         </div>
-      ) : (
-        <p className="rounded-2xl bg-dorado-claro px-4 py-3 text-sm">
-          Se guardará como <strong>Por responder</strong>. Podrás cambiarlo cuando contestes.
-        </p>
-      )}
+      ) : null}
 
       <Field
         id="followUpOn"
-        label="¿Cuándo quieres revisarla?"
+        label="Próxima revisión"
         optional
-        hint="Te la recordaremos en Hoy a partir de ese día."
+        hint="Ese día aparecerá en Para revisar."
         error={errors.followUpOn}
       >
         {(aria) => (

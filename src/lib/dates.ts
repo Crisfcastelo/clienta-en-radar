@@ -104,3 +104,9 @@ export function dayPartIn(timeZone: string, now: Date = new Date()): DayPart {
   if (hour >= 14 && hour < 21) return "afternoon";
   return "evening";
 }
+
+/** Lunes de la semana de `value` (las semanas empiezan en lunes en España). */
+export function startOfWeek(value: IsoDate): IsoDate {
+  const weekday = new Date(isoToUtcMs(value)).getUTCDay(); // 0 = domingo
+  return addDays(value, -((weekday + 6) % 7));
+}

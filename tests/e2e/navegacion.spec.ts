@@ -2,12 +2,15 @@ import { expect, test } from "@playwright/test";
 import { expectNoA11yViolations, resetDemo } from "./helpers";
 
 const PAGES = [
-  { path: "/hoy", heading: /Buen(os|as) (días|tardes|noches), Marta/ },
-  { path: "/consultas", heading: "Consultas" },
-  { path: "/consultas/nueva", heading: "Nueva consulta" },
+  { path: "/hoy", heading: "¿Qué tienes pendiente?" },
+  { path: "/consultas", heading: "Todas tus consultas" },
+  { path: "/consultas/nueva", heading: "¿Quién te ha escrito?" },
   { path: "/consultas/0b8f6a52-1f43-4c55-9b0e-6d7c1a2e3f01", heading: "Lucía (vestido de novia)" },
-  { path: "/ayuda", heading: "Ayuda" },
+  { path: "/ayuda", heading: "Todo lo que necesitas, a mano" },
   { path: "/ajustes", heading: "Ajustes" },
+  { path: "/bienvenida", heading: "Vamos a quitarte una preocupación de encima." },
+  { path: "/bienvenida?paso=2", heading: "¿Quién te ha escrito?" },
+  { path: "/bienvenida?paso=3", heading: "Ya tienes tu radar preparado." },
   { path: "/acceso", heading: "Entra en tu cuenta" },
   { path: "/sin-acceso", heading: "Este email todavía no tiene acceso" },
 ];
@@ -39,10 +42,10 @@ test("la navegación principal marca la página actual", async ({ page, isMobile
   await nav.getByRole("link", { name: "Consultas" }).click();
   await expect(page).toHaveURL(/\/consultas$/);
   await expect(nav.getByRole("link", { name: "Consultas" })).toHaveAttribute("aria-current", "page");
-  await nav.getByRole("link", { name: isMobile ? "Nueva" : "Nueva consulta" }).click();
+  await nav.getByRole("link", { name: isMobile ? "Añadir" : "Añadir consulta" }).click();
   await expect(page).toHaveURL(/\/consultas\/nueva$/);
   await nav.getByRole("link", { name: "Ayuda" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Ayuda" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Todo lo que necesitas, a mano" })).toBeVisible();
 });
 
 test("una página inexistente muestra un mensaje amable", async ({ page }) => {
@@ -57,18 +60,53 @@ test("una consulta inexistente o con id inválido da 'no encontrada'", async ({ 
   await expect(page.getByRole("heading", { name: "No encontramos esta consulta" })).toBeVisible();
 });
 
-test("primer acceso: cuenta sin consultas", async ({ page }) => {
-  await resetDemo(page, "vacio");
-  await expect(
-    page.getByText(
-      "Vamos a quitarte una preocupación de encima. Empieza añadiendo las consultas que tienes pendientes.",
-    ),
-  ).toBeVisible();
-  await expectNoA11yViolations(page);
+test.describe("Primera configuración", () => {
+  test("una compradora nueva pasa por la bienvenida y termina en sus pendientes", async ({ page }) => {
+    await resetDemo(page, "vacio");
+    // Mientras no termine la bienvenida, la zona privada la devuelve aquí.
+    await page.goto("/hoy");
+    await expect(page).toHaveURL(/\/bienvenida$/);
+    await expect(page.getByText("Tus consultas pendientes, fuera de tu cabeza y bajo control.")).toBeVisible();
+
+    await page.getByRole("link", { name: "Empezar" }).click();
+    await expect(
+      page.getByText("Empieza con tres consultas que tengas pendientes. No necesitas registrar todo lo anterior."),
+    ).toBeVisible();
+    await expect(page.getByText("Aún no has guardado ninguna.")).toBeVisible();
+
+    await page.getByLabel("Nombre o referencia").fill("Sonia (bienvenida)");
+    await page.getByLabel("Qué necesita").fill("Precio de la sesión de fotos");
+    await page.getByRole("button", { name: "Guardar consulta" }).click();
+    await expect(page.getByText("Guardada. Ya no tienes que acordarte de memoria.")).toBeVisible();
+    await expect(page.getByText("Llevas 1 guardada.")).toBeVisible();
+
+    await page.getByRole("link", { name: "Ya está por ahora" }).click();
+    await expect(page.getByText("La idea es sencilla: que no tengas que acordarte de todo.")).toBeVisible();
+    await page.getByRole("button", { name: "Ir a mis pendientes" }).click();
+
+    await expect(page).toHaveURL(/\/hoy$/);
+    await expect(
+      page.getByRole("region", { name: /Por responder/ }).getByRole("link", { name: "Sonia (bienvenida)" }),
+    ).toBeVisible();
+    // Ya no vuelve a aparecer.
+    await page.goto("/ayuda");
+    await page.goto("/hoy");
+    await expect(page).toHaveURL(/\/hoy$/);
+  });
+
+  test("se puede saltar y Hoy explica cómo empezar", async ({ page }) => {
+    await resetDemo(page, "vacio");
+    await page.getByRole("button", { name: "Saltar por ahora" }).click();
+    await expect(page).toHaveURL(/\/hoy$/);
+    await expect(page.getByRole("heading", { name: "Vamos a quitarte una preocupación de encima." })).toBeVisible();
+    await expect(page.getByText("Empieza con tres consultas que tengas pendientes.")).toBeVisible();
+    await expectNoA11yViolations(page);
+  });
 });
 
 test("acceso: pide email válido y luego un código de 6 números", async ({ page }) => {
   await page.goto("/acceso");
+  await expect(page.getByText("Tus consultas pendientes, fuera de tu cabeza y bajo control.")).toBeVisible();
   await page.getByRole("button", { name: "Enviarme un código" }).click();
   await expect(page.getByText("Escribe un email válido")).toBeVisible();
   await page.getByLabel("Tu email").fill("marta@ejemplo.es");

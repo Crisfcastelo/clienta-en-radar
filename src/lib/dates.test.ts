@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dayPartIn, daysBetween, formatFollowUp, formatReceived, isValidIsoDate, todayIn } from "./dates";
+import {
+  addDays,
+  dayPartIn,
+  daysBetween,
+  formatFollowUp,
+  formatReceived,
+  isValidIsoDate,
+  startOfWeek,
+  todayIn,
+} from "./dates";
 
 const TZ = "Europe/Madrid";
 
@@ -26,6 +35,12 @@ describe("cálculos de días", () => {
   it("cuenta días de calendario", () => {
     expect(daysBetween("2026-10-25", "2026-10-26")).toBe(1);
     expect(daysBetween("2026-10-28", "2026-10-20")).toBe(-8);
+  });
+
+  it("la semana empieza el lunes", () => {
+    expect(startOfWeek("2026-10-28")).toBe("2026-10-26"); // miércoles
+    expect(startOfWeek("2026-10-26")).toBe("2026-10-26"); // lunes
+    expect(startOfWeek("2026-11-01")).toBe("2026-10-26"); // domingo
   });
 
   it("valida fechas", () => {

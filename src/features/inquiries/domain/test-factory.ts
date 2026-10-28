@@ -15,7 +15,6 @@ export function makeInquiry(overrides: Partial<Inquiry> = {}): Inquiry {
     status: "por_responder",
     followUpOn: null,
     resolvedAt: null,
-    archivedAt: null,
     createdAt: "2026-10-20T10:00:00.000Z",
     updatedAt: "2026-10-20T10:00:00.000Z",
     ...overrides,

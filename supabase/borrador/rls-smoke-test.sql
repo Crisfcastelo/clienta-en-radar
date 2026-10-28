@@ -44,7 +44,7 @@ select pg_temp.expect_error($$update public.inquiries set resolved_at = now()$$,
 select pg_temp.expect_error($$insert into public.inquiry_events (inquiry_id, user_id, event_type) values ('11111111-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'created')$$, 'falsear historial');
 select pg_temp.expect_error($$insert into public.entitlements (user_id, product_code, source) values ('aaaaaaaa-0000-0000-0000-000000000001', 'clienta_en_radar', 'manual')$$, 'concederse acceso');
 select pg_temp.expect_error($$select * from public.payment_events$$, 'leer payment_events');
-select pg_temp.expect_error($$select public.process_payment_succeeded('evt_x', 'x', 'aaaaaaaa-0000-0000-0000-000000000001', 'pi_x', now())$$, 'ejecutar función de pagos');
+select pg_temp.expect_error($$select public.process_payment_succeeded('evt_x', 'x', 'a@test.local', 'pi_x', now())$$, 'ejecutar función de pagos');
 select pg_temp.expect_error($$update public.profiles set timezone = 'Marte/Olympus'$$, 'zona horaria inválida');
 commit;
 
@@ -82,10 +82,11 @@ commit;
 -- Pagos (como service_role)
 begin;
 set local role service_role;
-select pg_temp.check((select public.process_payment_succeeded('evt_1', 'checkout.session.completed', 'bbbbbbbb-0000-0000-0000-000000000002', 'pi_1', now()) = 'granted'), 'pago concede');
-select pg_temp.check((select public.process_payment_succeeded('evt_1', 'checkout.session.completed', 'bbbbbbbb-0000-0000-0000-000000000002', 'pi_1', now()) = 'duplicate'), 'mismo evento = duplicado');
-select pg_temp.check((select public.process_payment_succeeded('evt_2', 'checkout.session.async_payment_succeeded', 'bbbbbbbb-0000-0000-0000-000000000002', 'pi_1', now()) = 'already_granted'), 'otro evento del mismo pago no duplica');
+select pg_temp.check((select public.process_payment_succeeded('evt_1', 'checkout.session.completed', 'B@Test.local', 'pi_1', now()) = 'granted'), 'pago concede');
+select pg_temp.check((select public.process_payment_succeeded('evt_1', 'checkout.session.completed', 'B@Test.local', 'pi_1', now()) = 'duplicate'), 'mismo evento = duplicado');
+select pg_temp.check((select public.process_payment_succeeded('evt_2', 'checkout.session.async_payment_succeeded', 'b@test.local', 'pi_1', now()) = 'already_granted'), 'otro evento del mismo pago no duplica');
 select pg_temp.check((select count(*) = 1 from public.entitlements where provider_payment_id = 'pi_1'), 'un solo derecho por pago');
+select pg_temp.check((select user_id = 'bbbbbbbb-0000-0000-0000-000000000002' and purchaser_email = 'b@test.local' from public.entitlements where provider_payment_id = 'pi_1'), 'si ya hay cuenta con ese email, se vincula al momento (sin distinguir mayúsculas)');
 select pg_temp.check((select public.process_payment_reversed('evt_3', 'charge.refunded', 'pi_1', 'refund') = 'revoked'), 'reembolso revoca');
 select pg_temp.check((select public.process_payment_reversed('evt_3', 'charge.refunded', 'pi_1', 'refund') = 'duplicate'), 'reembolso repetido = duplicado');
 commit;
@@ -102,20 +103,52 @@ with d as (delete from public.inquiries returning 1) select pg_temp.check((selec
 rollback;
 
 -- Primera compradora
-insert into auth.users (id) select gen_random_uuid() from generate_series(1, 3);
 insert into public.promotions (code, starts_at, ends_at) values ('lanzamiento', now() - interval '10 days', now() - interval '5 days');
 begin;
 set local role service_role;
 -- Los webhooks llegan desordenados: el cobro más antiguo llega el último
-select public.process_payment_succeeded('evt_p3', 'x', (select id from auth.users where email is null order by id limit 1 offset 2), 'pi_c', now() - interval '6 days');
-select public.process_payment_succeeded('evt_p2', 'x', (select id from auth.users where email is null order by id limit 1 offset 1), 'pi_b', now() - interval '8 days');
-select public.process_payment_succeeded('evt_p1', 'x', (select id from auth.users where email is null order by id limit 1 offset 0), 'pi_a', now() - interval '9 days');
-select public.process_payment_succeeded('evt_p4', 'x', 'aaaaaaaa-0000-0000-0000-000000000001', 'pi_fuera', now() - interval '1 day');
+select public.process_payment_succeeded('evt_p3', 'x', 'c3@test.local', 'pi_c', now() - interval '6 days');
+select public.process_payment_succeeded('evt_p2', 'x', 'c2@test.local', 'pi_b', now() - interval '8 days');
+select public.process_payment_succeeded('evt_p1', 'x', 'c1@test.local', 'pi_a', now() - interval '9 days');
+select public.process_payment_succeeded('evt_p4', 'x', 'a@test.local', 'pi_fuera', now() - interval '1 day');
 select pg_temp.check((select count(*) = 3 from public.promotion_entries), 'solo entran cobros dentro de la ventana');
 select public.process_payment_reversed('evt_p5', 'charge.refunded', 'pi_a', 'refund');
 select pg_temp.expect_error($$select public.select_promotion_winner('lanzamiento', interval '7 days')$$, 'no decide antes del margen');
 select pg_temp.check((select provider_payment_id = 'pi_b' from public.entitlements where id = (select public.select_promotion_winner('lanzamiento'))), 'gana el cobro más antiguo no reembolsado, no el primer webhook');
 select pg_temp.expect_error($$select public.select_promotion_winner('lanzamiento')$$, 'no se decide dos veces');
+commit;
+
+-- Compra con Payment Link antes de tener cuenta: el acceso espera a que entre con ese email
+begin;
+set local role service_role;
+select pg_temp.check((select public.process_payment_succeeded('evt_n1', 'checkout.session.completed', ' Nueva@Test.local ', 'pi_n1', now()) = 'granted'), 'pago sin cuenta concede igualmente');
+select pg_temp.check((select user_id is null and purchaser_email = 'nueva@test.local' from public.entitlements where provider_payment_id = 'pi_n1'), 'queda pendiente de reclamar, con el email normalizado');
+commit;
+
+insert into auth.users (id, email) values
+  ('cccccccc-0000-0000-0000-000000000003', 'Nueva@test.LOCAL'),
+  ('dddddddd-0000-0000-0000-000000000004', 'otra@test.local');
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000004","email":"otra@test.local"}';
+select pg_temp.check((select public.claim_entitlements() = 0), 'otra usuaria no puede reclamar una compra ajena');
+select pg_temp.check((select public.has_access() = false), 'otra usuaria sigue sin acceso');
+select pg_temp.check((select count(*) = 0 from public.entitlements), 'no ve compras pendientes de nadie');
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"cccccccc-0000-0000-0000-000000000003","email":"Nueva@test.LOCAL"}';
+select pg_temp.check((select public.has_access() = false), 'antes de reclamar no hay acceso');
+select pg_temp.check((select public.claim_entitlements() = 1), 'al entrar con su email reclama su compra');
+select pg_temp.check((select public.has_access()), 'después de reclamar tiene acceso');
+select pg_temp.check((select public.claim_entitlements() = 0), 'reclamar dos veces no hace nada');
+commit;
+
+begin;
+set local role anon;
+select pg_temp.expect_error($$select public.claim_entitlements()$$, 'anon no puede reclamar');
 commit;
 
 -- Rate limit

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isValidIsoDate } from "@/lib/dates";
+import { INQUIRY_ACTIONS } from "./domain/transitions";
 import { INQUIRY_CHANNELS, INQUIRY_STATUSES } from "./domain/types";
 
 export const LIMITS = {
@@ -28,9 +29,9 @@ export const inquiryFieldsSchema = z.object({
     .min(1, "Escribe un nombre o una referencia.")
     .max(LIMITS.customerLabel, `Usa como máximo ${LIMITS.customerLabel} caracteres.`),
   summary: z
-    .string("Cuenta en pocas palabras qué te han preguntado.")
+    .string("Cuenta en pocas palabras qué necesita.")
     .trim()
-    .min(1, "Cuenta en pocas palabras qué te han preguntado.")
+    .min(1, "Cuenta en pocas palabras qué necesita.")
     .max(LIMITS.summary, `Usa como máximo ${LIMITS.summary} caracteres.`),
   channel: z.preprocess(emptyToNull, z.enum(INQUIRY_CHANNELS, "Elige un canal de la lista.").nullable()),
   notes: z.preprocess(
@@ -48,10 +49,16 @@ export const updateInquirySchema = inquiryFieldsSchema.extend({
   status: z.enum(INQUIRY_STATUSES, "Elige un estado de la lista."),
 });
 
-export const statusChangeSchema = z.object({
-  id: z.uuid(),
-  status: z.enum(INQUIRY_STATUSES),
-});
+export const quickActionSchema = z
+  .object({
+    id: z.uuid("No encontramos esta consulta."),
+    action: z.enum(INQUIRY_ACTIONS, "No se pudo hacer este cambio."),
+    followUpOn,
+  })
+  .refine((data) => data.action !== "prepare_follow_up" || data.followUpOn !== null, {
+    message: "Elige cuándo quieres retomarla.",
+    path: ["followUpOn"],
+  });
 
 export const idSchema = z.object({ id: z.uuid() });
 

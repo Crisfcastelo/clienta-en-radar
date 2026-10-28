@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { requireUser } from "@/features/account/session";
 import { updateInquiryAction } from "@/features/inquiries/actions";
 import { ChannelTag } from "@/features/inquiries/components/channel-tag";
-import { InquiryActions } from "@/features/inquiries/components/inquiry-actions";
+import { DeleteInquiry } from "@/features/inquiries/components/delete-inquiry";
 import { InquiryForm } from "@/features/inquiries/components/inquiry-form";
+import { QuickActions } from "@/features/inquiries/components/quick-actions";
 import { StatusBadge } from "@/features/inquiries/components/status-badge";
 import { inquiries } from "@/features/inquiries/data";
 import { MESSAGES } from "@/features/inquiries/domain/labels";
@@ -31,16 +32,15 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title={inquiry.customerLabel} back={{ href: "/consultas", label: "Consultas" }} />
+      <PageHeader title={inquiry.customerLabel} back={{ href: "/consultas", label: "Todas tus consultas" }} />
 
       <Card className="space-y-4 p-5">
         <div className="flex flex-wrap items-center gap-3">
           <StatusBadge status={inquiry.status} />
           <ChannelTag channel={inquiry.channel} />
-          {inquiry.archivedAt ? (
-            <span className="rounded-full bg-neutro px-3 py-1 text-sm font-semibold">Archivada</span>
-          ) : null}
         </div>
+
+        <p className="text-lg">{inquiry.summary}</p>
 
         {overdue ? (
           <p className="flex items-start gap-2 font-semibold text-terracota">
@@ -53,7 +53,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
           <div className="rounded-2xl bg-dorado-claro p-3">
             <dt className="flex items-center gap-1.5 text-sm font-semibold">
               <CalendarClock aria-hidden className="size-4" />
-              Revisar
+              Próxima revisión
             </dt>
             <dd className="text-lg">{inquiry.followUpOn ? formatFollowUp(inquiry.followUpOn, today) : "Sin fecha"}</dd>
           </div>
@@ -69,6 +69,8 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
           <PencilLine aria-hidden className="size-4" />
           Última modificación: {formatDateTime(inquiry.updatedAt, user.timezone)}
         </p>
+
+        <QuickActions id={inquiry.id} customerLabel={inquiry.customerLabel} status={inquiry.status} today={today} />
       </Card>
 
       <Card className="p-5 sm:p-6">
@@ -76,12 +78,7 @@ export default async function InquiryDetailPage({ params }: PageProps<"/consulta
         <InquiryForm mode="edit" inquiry={inquiry} today={today} action={action} />
       </Card>
 
-      <InquiryActions
-        id={inquiry.id}
-        customerLabel={inquiry.customerLabel}
-        archived={inquiry.archivedAt !== null}
-        resolved={inquiry.status === "resuelta"}
-      />
+      <DeleteInquiry id={inquiry.id} customerLabel={inquiry.customerLabel} />
     </div>
   );
 }

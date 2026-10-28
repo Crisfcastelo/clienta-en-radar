@@ -12,14 +12,20 @@ export const DATE_RANGE_LABELS: Record<DateRange, string> = {
   "30d": "Últimos 30 días",
 };
 
-export type InquiryView = "activas" | "archivadas";
+/** Filtros de estado visibles en Consultas, con los textos de contenido-funcional.md. */
+export const STATUS_FILTERS: ReadonlyArray<{ value: InquiryStatus | null; label: string }> = [
+  { value: null, label: "Todas" },
+  { value: "por_responder", label: "Por responder" },
+  { value: "esperando_respuesta", label: "Esperando respuesta" },
+  { value: "hacer_seguimiento", label: "Seguimiento" },
+  { value: "resuelta", label: "Resueltas" },
+];
 
 export interface InquiryFilters {
   q: string;
   status: InquiryStatus | null;
   channel: InquiryChannel | null;
   range: DateRange;
-  view: InquiryView;
 }
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -38,12 +44,27 @@ export function parseFilters(params: RawParams): InquiryFilters {
     status: isInquiryStatus(status) ? status : null,
     channel: isInquiryChannel(channel) ? channel : null,
     range: (DATE_RANGES as readonly string[]).includes(range) ? (range as DateRange) : "todas",
-    view: first(params.vista) === "archivadas" ? "archivadas" : "activas",
   };
 }
 
 export function hasActiveFilters(filters: InquiryFilters): boolean {
-  return Boolean(filters.q || filters.status || filters.channel || filters.range !== "todas");
+  return Boolean(filters.q || filters.status || moreFiltersCount(filters));
+}
+
+/** Filtros secundarios (canal y fecha), que van plegados en "Más filtros". */
+export function moreFiltersCount(filters: InquiryFilters): number {
+  return (filters.channel ? 1 : 0) + (filters.range !== "todas" ? 1 : 0);
+}
+
+/** URL de Consultas con los filtros indicados (los vacíos no se incluyen). */
+export function filtersHref(filters: InquiryFilters): string {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.status) params.set("estado", filters.status);
+  if (filters.channel) params.set("canal", filters.channel);
+  if (filters.range !== "todas") params.set("fecha", filters.range);
+  const query = params.toString();
+  return query ? `/consultas?${query}` : "/consultas";
 }
 
 /** Minúsculas y sin tildes, para que "Lucía" se encuentre buscando "lucia". */
@@ -76,8 +97,6 @@ export function filterInquiries(
           : null;
 
   return inquiries.filter((inquiry) => {
-    const archived = inquiry.archivedAt !== null;
-    if (filters.view === "activas" ? archived : !archived) return false;
     if (filters.status && inquiry.status !== filters.status) return false;
     if (filters.channel && inquiry.channel !== filters.channel) return false;
     if (since && toIsoDateIn(new Date(inquiry.createdAt), timeZone) < since) return false;

@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { HELP_RESOURCES, availableResources } from "./resources";
 
 describe("recursos de ayuda", () => {
-  it("prepara los tres bonus", () => {
-    expect(HELP_RESOURCES.map((r) => r.slug)).toEqual([
-      "biblioteca-de-respuestas",
-      "whatsapp-bajo-control",
-      "seguimientos",
+  it("prepara solo los recursos que van dentro de la app", () => {
+    expect(HELP_RESOURCES.map((r) => r.title)).toEqual([
+      "Responde sin pensar",
+      "WhatsApp bajo control",
+      "No dejes la conversación a medias",
     ]);
   });
 

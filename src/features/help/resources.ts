@@ -1,7 +1,10 @@
 /**
- * Registro de recursos y bonus. Solo se muestran los que están "disponible",
- * así nunca aparecen secciones vacías. Activar un bonus = añadir su ruta y
- * cambiar su estado aquí (y, en fase 6, comprobar el producto requerido).
+ * Recursos de Ayuda. Solo se muestran los que están "disponible", así nunca aparecen
+ * secciones vacías. El contenido lo redacta Crisfcastelo (docs/contenido-funcional.md);
+ * la app no lo inventa. Activar uno = añadir su contenido y su ruta y cambiar el estado.
+ *
+ * Fuera de la app por decisión de producto: Agenda sin idas y venidas,
+ * Cierra el día y desconecta, y el bonus épico de la primera compradora.
  */
 export type ResourceStatus = "disponible" | "oculto";
 
@@ -10,31 +13,26 @@ export interface HelpResource {
   title: string;
   description: string;
   status: ResourceStatus;
-  /** Código de producto en `entitlements` que da acceso. */
-  productCode: string;
 }
 
 export const HELP_RESOURCES: readonly HelpResource[] = [
   {
-    slug: "biblioteca-de-respuestas",
-    title: "Biblioteca de respuestas",
-    description: "Mensajes listos para copiar y adaptar a tu forma de hablar.",
+    slug: "responde-sin-pensar",
+    title: "Responde sin pensar",
+    description: "Mensajes listos para copiar y adaptar, clasificados por situación.",
     status: "oculto",
-    productCode: "bonus_biblioteca",
   },
   {
     slug: "whatsapp-bajo-control",
     title: "WhatsApp bajo control",
-    description: "Cómo organizar WhatsApp para que no se te escape ninguna conversación.",
+    description: "Configuración guiada, etiquetas, respuestas rápidas y mensajes de ausencia.",
     status: "oculto",
-    productCode: "bonus_whatsapp",
   },
   {
-    slug: "seguimientos",
-    title: "Seguimientos",
-    description: "Cuándo y cómo volver a escribir sin sentir que molestas.",
+    slug: "no-dejes-la-conversacion-a-medias",
+    title: "No dejes la conversación a medias",
+    description: "Secuencias de seguimiento, ejemplos y criterios para saber cuándo escribir.",
     status: "oculto",
-    productCode: "bonus_seguimientos",
   },
 ];
 
