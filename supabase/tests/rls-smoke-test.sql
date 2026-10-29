@@ -1,9 +1,9 @@
 \set ON_ERROR_STOP 1
 -- Pruebas de seguridad de la base de datos: RLS con dos usuarias, permisos, pagos idempotentes,
 -- compra por email y primera compradora. Se ejecuta en CI contra un Supabase local recién creado.
-insert into auth.users (id, email) values
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'a@test.local'),
-  ('bbbbbbbb-0000-0000-0000-000000000002', 'b@test.local');
+insert into auth.users (id, email, email_confirmed_at) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'a@test.local', now()),
+  ('bbbbbbbb-0000-0000-0000-000000000002', 'b@test.local', now());
 
 create or replace function pg_temp.expect_error(p_sql text, p_label text) returns void language plpgsql as $$
 begin
@@ -129,14 +129,21 @@ select pg_temp.check((select public.process_payment_succeeded('evt_n1', 'checkou
 select pg_temp.check((select user_id is null and purchaser_email = 'nueva@test.local' from public.entitlements where provider_payment_id = 'pi_n1'), 'queda pendiente de reclamar, con el email normalizado');
 commit;
 
-insert into auth.users (id, email) values
-  ('cccccccc-0000-0000-0000-000000000003', 'Nueva@test.LOCAL'),
-  ('dddddddd-0000-0000-0000-000000000004', 'otra@test.local');
+insert into auth.users (id, email, email_confirmed_at) values
+  ('cccccccc-0000-0000-0000-000000000003', 'Nueva@test.LOCAL', now()),
+  ('dddddddd-0000-0000-0000-000000000004', 'otra@test.local', now());
 
 begin;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000004","email":"otra@test.local"}';
 select pg_temp.check((select public.claim_entitlements() = 0), 'otra usuaria no puede reclamar una compra ajena');
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000004","email":"nueva@test.local"}';
+select pg_temp.check((select public.claim_entitlements() = 0), 'un token con el email de otra persona no sirve para reclamar');
+select pg_temp.check((select public.has_access() = false), 'sigue sin acceso con el email falseado');
 select pg_temp.check((select public.has_access() = false), 'otra usuaria sigue sin acceso');
 select pg_temp.check((select count(*) = 0 from public.entitlements), 'no ve compras pendientes de nadie');
 commit;
@@ -153,6 +160,30 @@ commit;
 begin;
 set local role anon;
 select pg_temp.expect_error($$select public.claim_entitlements()$$, 'anon no puede reclamar');
+commit;
+
+-- Cuenta registrada con el email de una clienta sin confirmarlo (por ejemplo, con contraseña por otra persona)
+insert into auth.users (id, email) values ('eeeeeeee-0000-0000-0000-000000000005', 'pillada@test.local');
+begin;
+set local role service_role;
+select pg_temp.check((select public.process_payment_succeeded('evt_e1', 'checkout.session.completed', 'pillada@test.local', 'pi_e1', now()) = 'granted'), 'pago con email de una cuenta sin confirmar');
+select pg_temp.check((select user_id is null from public.entitlements where provider_payment_id = 'pi_e1'), 'la compra no se vincula a una cuenta sin confirmar');
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"eeeeeeee-0000-0000-0000-000000000005","email":"pillada@test.local"}';
+select pg_temp.check((select public.claim_entitlements() = 0), 'una cuenta sin confirmar no reclama la compra');
+select pg_temp.check((select public.has_access() = false), 'una cuenta sin confirmar no tiene acceso');
+commit;
+
+-- Cuando la dueña del email lo confirma (entrando con su código), la compra ya es suya
+update auth.users set email_confirmed_at = now() where id = 'eeeeeeee-0000-0000-0000-000000000005';
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"eeeeeeee-0000-0000-0000-000000000005","email":"pillada@test.local"}';
+select pg_temp.check((select public.claim_entitlements() = 1), 'con el email confirmado reclama su compra');
+select pg_temp.check((select public.has_access()), 'y tiene acceso');
 commit;
 
 -- Rate limit

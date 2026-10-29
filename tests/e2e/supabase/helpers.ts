@@ -19,6 +19,18 @@ export function databaseUrl(): string {
   return url;
 }
 
+/** Llamada directa a la API de Auth del Supabase local, como haría alguien sin pasar por la app. */
+export async function authApi(path: string, body: unknown): Promise<Response> {
+  const url = required("SUPABASE_URL");
+  const host = new URL(url).hostname;
+  if (host !== "127.0.0.1" && host !== "localhost") throw new Error("Las pruebas solo pueden usar un Supabase local.");
+  return fetch(`${url}/auth/v1${path}`, {
+    method: "POST",
+    headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 export async function sql<T extends Record<string, unknown> = Record<string, unknown>>(
   text: string,
   params: unknown[] = [],

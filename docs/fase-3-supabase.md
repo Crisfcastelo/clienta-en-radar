@@ -66,5 +66,9 @@ el dominio `crisfcastelo.com`, remitente `acceso@crisfcastelo.com`.
   compra sí.
 - Una compra hecha antes de tener cuenta se vincula al entrar con el mismo email (sin distinguir mayúsculas). El
   código por email demuestra que el email es suyo.
+- Una compra solo se vincula a una cuenta con el email **confirmado**, y el email sale de `auth.users`, nunca del
+  token. Así nadie se queda una compra registrando antes el email de otra persona
+  (`20261029100000_vincular_solo_email_confirmado.sql`). En local la confirmación de email está activada, igual que en
+  el proyecto real.
 - Exportar los datos solo exige sesión, no compra: tras un reembolso se pueden seguir descargando.
 - El modo demostración (`DEMO_MODE=true`) se conserva para enseñar la app sin base de datos. Nunca con clientas reales.

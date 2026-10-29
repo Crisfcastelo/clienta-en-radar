@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { grantAccess, latestCode, revokeAccess, signIn, simulatePurchase, skipWelcome, uniqueEmail } from "./helpers";
+import {
+  authApi,
+  grantAccess,
+  latestCode,
+  revokeAccess,
+  signIn,
+  simulatePurchase,
+  skipWelcome,
+  sql,
+  uniqueEmail,
+} from "./helpers";
 
 test.describe("Acceso con código", () => {
   test("sin sesión, todo lo privado lleva a Acceso", async ({ page }) => {
@@ -74,6 +84,38 @@ test.describe("Compra con enlace de pago", () => {
     await page.goto("/bienvenida");
     await page.goto("/hoy");
     await expect(page).toHaveURL(/\/hoy$/);
+  });
+});
+
+test.describe("Cuenta registrada antes por otra persona", () => {
+  test("quien registra con contraseña el email de una clienta no se queda su compra ni su cuenta", async ({ page }) => {
+    const email = uniqueEmail("clienta");
+    const password = "Contrasena-de-otra-persona-1";
+
+    // Otra persona crea la cuenta con ese email y una contraseña, sin poder confirmarlo.
+    const signedUpAt = Date.now();
+    const signup = await authApi("/signup", { email, password });
+    expect(signup.status, await signup.text()).toBe(200);
+    await latestCode(email, signedUpAt);
+    const before = await authApi("/token?grant_type=password", { email, password });
+    expect(before.status, "sin confirmar no puede entrar").not.toBe(200);
+
+    // La clienta compra: la compra no se vincula a esa cuenta sin confirmar.
+    await simulatePurchase(email);
+    const [pending] = await sql<{ user_id: string | null }>(
+      "select user_id from public.entitlements where purchaser_email = lower($1)",
+      [email],
+    );
+    expect(pending?.user_id).toBeNull();
+
+    // La clienta entra con su código (confirma su email) y recibe su compra.
+    await page.waitForTimeout(1500); // Auth no deja pedir dos emails seguidos al mismo email
+    await signIn(page, email);
+    await expect(page).toHaveURL(/\/bienvenida$/);
+
+    // La contraseña que puso la otra persona no tiene que servir para entrar.
+    const after = await authApi("/token?grant_type=password", { email, password });
+    expect(after.status, "la contraseña de otra persona sigue sirviendo").not.toBe(200);
   });
 });
 

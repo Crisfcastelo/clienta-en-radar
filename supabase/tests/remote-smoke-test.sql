@@ -10,9 +10,9 @@ declare
   ok text[] := '{}';
   failed boolean;
 begin
-  insert into auth.users (id, email, aud, role) values
-    (a, 'ana@prueba.local', 'authenticated', 'authenticated'),
-    (b, 'bea@prueba.local', 'authenticated', 'authenticated');
+  insert into auth.users (id, email, aud, role, email_confirmed_at) values
+    (a, 'ana@prueba.local', 'authenticated', 'authenticated', now()),
+    (b, 'bea@prueba.local', 'authenticated', 'authenticated', now());
   select count(*) into n from public.profiles where id in (a, b);
   if n <> 2 then raise exception 'FALLO perfil automático'; end if;
   ok := ok || 'perfil automático'::text;
@@ -94,7 +94,13 @@ begin
 
   -- Compra antes de tener cuenta
   r := public.process_payment_succeeded('evt_prueba_3', 'checkout.session.completed', 'Nueva@Prueba.local', 'pi_prueba_3', now());
-  insert into auth.users (id, email, aud, role) values ('cccccccc-0000-0000-0000-0000000000c3', 'nueva@prueba.local', 'authenticated', 'authenticated');
+  insert into auth.users (id, email, aud, role, email_confirmed_at) values ('cccccccc-0000-0000-0000-0000000000c3', 'nueva@prueba.local', 'authenticated', 'authenticated', now());
+  -- Un token con el email de la compradora no basta: cuenta el email de la cuenta
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'email', 'nueva@prueba.local', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  if public.claim_entitlements() <> 0 then raise exception 'FALLO se reclama con un email falseado en el token'; end if;
+  execute 'reset role';
+  ok := ok || 'email falseado no reclama'::text;
   perform set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-0000000000c3","email":"nueva@prueba.local","role":"authenticated"}', true);
   execute 'set local role authenticated';
   if public.has_access() then raise exception 'FALLO acceso antes de reclamar la compra'; end if;
@@ -102,6 +108,18 @@ begin
   if not public.has_access() then raise exception 'FALLO sin acceso tras reclamar'; end if;
   ok := ok || 'compra previa se vincula'::text;
   execute 'reset role';
+
+  -- Cuenta con el email de una clienta pero sin confirmar (registrada por otra persona)
+  insert into auth.users (id, email, aud, role) values ('dddddddd-0000-0000-0000-0000000000d4', 'pillada@prueba.local', 'authenticated', 'authenticated');
+  r := public.process_payment_succeeded('evt_prueba_5', 'checkout.session.completed', 'pillada@prueba.local', 'pi_prueba_5', now());
+  select count(*) into n from public.entitlements where provider_payment_id = 'pi_prueba_5' and user_id is not null;
+  if n <> 0 then raise exception 'FALLO la compra se vincula a una cuenta sin confirmar'; end if;
+  perform set_config('request.jwt.claims', '{"sub":"dddddddd-0000-0000-0000-0000000000d4","email":"pillada@prueba.local","role":"authenticated"}', true);
+  execute 'set local role authenticated';
+  if public.claim_entitlements() <> 0 then raise exception 'FALLO una cuenta sin confirmar reclama la compra'; end if;
+  if public.has_access() then raise exception 'FALLO una cuenta sin confirmar tiene acceso'; end if;
+  execute 'reset role';
+  ok := ok || 'cuenta sin confirmar no se queda la compra'::text;
 
   -- Reembolso
   r := public.process_payment_reversed('evt_prueba_4', 'charge.refunded', 'pi_prueba_1', 'refund');
