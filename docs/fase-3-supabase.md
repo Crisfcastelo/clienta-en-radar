@@ -28,8 +28,13 @@ SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_PUBLISHABLE_KEY=<PUBLISHABLE_KEY de supabase status>
 ```
 
-Los códigos de acceso llegan a Mailpit: http://127.0.0.1:54324. Para darte acceso de prueba tras entrar por primera
-vez:
+Los registros están cerrados, así que primero crea tu cuenta de prueba (con el email ya confirmado):
+
+```bash
+supabase/dev/crear-cuenta.sh tu@email.es
+```
+
+Los códigos de acceso llegan a Mailpit: http://127.0.0.1:54324. Para darte acceso de prueba:
 
 ```bash
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v email='tu@email.es' -f supabase/dev/conceder-acceso.sql
@@ -46,7 +51,8 @@ el dominio `crisfcastelo.com`, remitente `acceso@crisfcastelo.com`.
 2. ~~Aplicar la migración~~ hecho con el conector, registrada con la versión `20261028180000` para que
    `npx supabase db push` no la repita. Las siguientes: `npx supabase link --project-ref iidpuccxivqafxgxssqb` y
    `npx supabase db push`, siempre con confirmación previa.
-3. **Authentication > Sign In / Providers > Email**: email activado, "Confirm email" activado, caducidad del código
+3. **Authentication > Sign In / Providers**: desactivar "Allow new users to sign up" (las cuentas las crea el
+   servidor al cobrar). En **Email**: email activado, "Confirm email" activado, caducidad del código
    (Email OTP Expiration) en 600 segundos, longitud 6.
 4. **Authentication > Email Templates**: en "Magic link" y en "Confirm signup", asunto «Tu código para entrar en
    Clienta en Radar» y el contenido de `supabase/templates/codigo-acceso.html`.
@@ -62,8 +68,12 @@ el dominio `crisfcastelo.com`, remitente `acceso@crisfcastelo.com`.
 
 ## Decisiones de esta fase
 
-- `shouldCreateUser: true`: pedir un código nunca revela si un email tiene cuenta. Tener cuenta no da acceso; la
-  compra sí.
+- **Registros cerrados** ("Allow new users to sign up" desactivado y `shouldCreateUser: false`). Las cuentas solo
+  se crean en el servidor al cobrar, con el email ya confirmado. Motivo: una E2E demostró que si alguien registra con
+  contraseña el email de una clienta antes que ella, esa contraseña sigue sirviendo después de que la clienta entre
+  con su código. Con los registros cerrados nadie puede preparar esa cuenta.
+- Pedir un código con un email sin cuenta responde lo mismo que con cuenta («si tu email tiene acceso, te hemos
+  enviado un código»): no se revela quién ha comprado. Tener cuenta no da acceso; la compra sí.
 - Una compra hecha antes de tener cuenta se vincula al entrar con el mismo email (sin distinguir mayúsculas). El
   código por email demuestra que el email es suyo.
 - Una compra solo se vincula a una cuenta con el email **confirmado**, y el email sale de `auth.users`, nunca del

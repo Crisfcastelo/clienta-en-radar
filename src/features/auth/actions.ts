@@ -16,15 +16,17 @@ const codeSchema = z
 
 const RATE_LIMITED = "Has pedido varios códigos seguidos. Espera un minuto y vuelve a intentarlo.";
 const GENERIC = "No hemos podido enviarte el código. Inténtalo de nuevo en unos segundos.";
+// Lo que responde Auth cuando el email no tiene cuenta (los registros están cerrados).
+const NO_ACCOUNT_CODES = new Set(["otp_disabled", "signup_disabled", "user_not_found"]);
 
 function normalizeEmail(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
 /**
- * Paso 1: enviar un código de 6 cifras al email. Si la cuenta no existe se crea,
- * así no se revela qué emails están registrados. Tener cuenta no da acceso:
- * hace falta una compra con ese email.
+ * Paso 1: enviar un código de 6 cifras al email. Las cuentas solo se crean al comprar
+ * (los registros están cerrados en Supabase), así nadie puede registrar antes el email de otra persona.
+ * Si el email no tiene cuenta, la respuesta es la misma que si la tuviera: no se revela quién ha comprado.
  */
 export async function requestCodeAction(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const parsed = emailSchema.safeParse(normalizeEmail(formData.get("email")));
@@ -36,8 +38,8 @@ export async function requestCodeAction(_prev: SignInState, formData: FormData):
   if (isDemoMode()) return { step: "code", email, resent };
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-  if (error) {
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  if (error && !NO_ACCOUNT_CODES.has(error.code ?? "")) {
     const limited = error.status === 429 || error.code === "over_email_send_rate_limit";
     return resent
       ? { step: "code", email, error: limited ? RATE_LIMITED : GENERIC }

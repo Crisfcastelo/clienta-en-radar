@@ -57,6 +57,8 @@ jobs:
             echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
             echo "DB_URL=$DB_URL"
             echo "MAILPIT_URL=$MAILPIT_URL"
+            # Solo para las pruebas (crear cuentas como hará el servidor al cobrar). La app no la usa.
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
           } >> "$GITHUB_ENV"
 
       - name: Pruebas de seguridad de la base de datos (RLS, pagos, primera compradora)

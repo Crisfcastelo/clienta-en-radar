@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   authApi,
+  createAccount,
   grantAccess,
   latestCode,
   revokeAccess,
@@ -33,6 +34,7 @@ test.describe("Acceso con código", () => {
 
   test("un código incorrecto no deja entrar", async ({ page }) => {
     const email = uniqueEmail("codigo");
+    await createAccount(email);
     await page.goto("/acceso");
     await page.getByLabel("Tu email").fill(email);
     const sentAt = Date.now();
@@ -87,35 +89,25 @@ test.describe("Compra con enlace de pago", () => {
   });
 });
 
-test.describe("Cuenta registrada antes por otra persona", () => {
-  test("quien registra con contraseña el email de una clienta no se queda su compra ni su cuenta", async ({ page }) => {
-    const email = uniqueEmail("clienta");
+test.describe("Registros cerrados", () => {
+  test("nadie puede crearse una cuenta por su cuenta, ni con contraseña ni con código", async ({ page }) => {
+    const email = uniqueEmail("intrusa");
     const password = "Contrasena-de-otra-persona-1";
 
-    // Otra persona crea la cuenta con ese email y una contraseña, sin poder confirmarlo.
-    const signedUpAt = Date.now();
     const signup = await authApi("/signup", { email, password });
-    expect(signup.status, await signup.text()).toBe(200);
-    await latestCode(email, signedUpAt);
-    const before = await authApi("/token?grant_type=password", { email, password });
-    expect(before.status, "sin confirmar no puede entrar").not.toBe(200);
+    expect(signup.status, "el registro con contraseña tiene que estar cerrado").not.toBe(200);
+    const login = await authApi("/token?grant_type=password", { email, password });
+    expect(login.status).not.toBe(200);
+    const otp = await authApi("/otp", { email, create_user: true });
+    expect(otp.status, "pedir un código no puede crear la cuenta").not.toBe(200);
 
-    // La clienta compra: la compra no se vincula a esa cuenta sin confirmar.
-    await simulatePurchase(email);
-    const [pending] = await sql<{ user_id: string | null }>(
-      "select user_id from public.entitlements where purchaser_email = lower($1)",
-      [email],
-    );
-    expect(pending?.user_id).toBeNull();
-
-    // La clienta entra con su código (confirma su email) y recibe su compra.
-    await page.waitForTimeout(1500); // Auth no deja pedir dos emails seguidos al mismo email
-    await signIn(page, email);
-    await expect(page).toHaveURL(/\/bienvenida$/);
-
-    // La contraseña que puso la otra persona no tiene que servir para entrar.
-    const after = await authApi("/token?grant_type=password", { email, password });
-    expect(after.status, "la contraseña de otra persona sigue sirviendo").not.toBe(200);
+    // Desde la app, un email sin cuenta ve lo mismo que uno con cuenta, y no se crea nada.
+    await page.goto("/acceso");
+    await page.getByLabel("Tu email").fill(email);
+    await page.getByRole("button", { name: "Enviarme un código" }).click();
+    await expect(page.getByText("Te hemos enviado un código")).toBeVisible();
+    const users = await sql("select 1 from auth.users where lower(email) = lower($1)", [email]);
+    expect(users).toHaveLength(0);
   });
 });
 

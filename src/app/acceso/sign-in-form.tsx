@@ -44,8 +44,9 @@ export function SignInForm() {
   return (
     <div className="space-y-5">
       <Notice tone="info">
-        {state.resent ? "Te hemos enviado un código nuevo" : "Te hemos enviado un código de 6 números"} a{" "}
-        <strong className="break-all">{state.email}</strong>. Puede tardar un minuto; mira también en spam.
+        Si <strong className="break-all">{state.email}</strong> tiene acceso,{" "}
+        {state.resent ? "te hemos enviado un código nuevo" : "te hemos enviado un código de 6 números"}. Puede tardar un
+        minuto; mira también en spam.
       </Notice>
       <form action={action} noValidate className="space-y-5">
         <input type="hidden" name="intent" value="verificar" />

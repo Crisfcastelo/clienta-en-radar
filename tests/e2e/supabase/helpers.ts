@@ -19,16 +19,35 @@ export function databaseUrl(): string {
   return url;
 }
 
-/** Llamada directa a la API de Auth del Supabase local, como haría alguien sin pasar por la app. */
-export async function authApi(path: string, body: unknown): Promise<Response> {
+function localSupabaseUrl(): string {
   const url = required("SUPABASE_URL");
   const host = new URL(url).hostname;
   if (host !== "127.0.0.1" && host !== "localhost") throw new Error("Las pruebas solo pueden usar un Supabase local.");
-  return fetch(`${url}/auth/v1${path}`, {
+  return url;
+}
+
+/** Llamada directa a la API de Auth del Supabase local, como haría alguien sin pasar por la app. */
+export async function authApi(path: string, body: unknown): Promise<Response> {
+  return fetch(`${localSupabaseUrl()}/auth/v1${path}`, {
     method: "POST",
     headers: { apikey: required("SUPABASE_PUBLISHABLE_KEY"), "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * Crea una cuenta con el email ya confirmado, como hará el servidor al recibir un pago.
+ * Los registros están cerrados: nadie puede crearse una cuenta por su cuenta.
+ */
+export async function createAccount(email: string) {
+  const key = required("SUPABASE_SERVICE_ROLE_KEY");
+  const response = await fetch(`${localSupabaseUrl()}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, email_confirm: true }),
+  });
+  if (!response.ok)
+    throw new Error(`No se pudo crear la cuenta de prueba: ${response.status} ${await response.text()}`);
 }
 
 export async function sql<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -99,8 +118,9 @@ export async function latestCode(email: string, notBefore: number): Promise<stri
   throw new Error(`No ha llegado ningún código a ${email}.`);
 }
 
-/** Entra con email y código, como lo haría una usuaria. */
-export async function signIn(page: Page, email: string) {
+/** Crea la cuenta (si se pide) y entra con email y código, como lo haría una usuaria. */
+export async function signIn(page: Page, email: string, { create = true }: { create?: boolean } = {}) {
+  if (create) await createAccount(email);
   await page.goto("/acceso");
   await page.getByLabel("Tu email").fill(email);
   const sentAt = Date.now();

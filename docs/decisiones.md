@@ -107,3 +107,11 @@ Esquema SQL (`supabase/borrador`): sin `archived_at`; `retention_days` nulo por 
 
 Los tres recursos que van dentro de la app son: los 25 mensajes editables (Responde sin pensar), la configuración
 guiada de WhatsApp (WhatsApp bajo control) y las secuencias de seguimiento (No dejes la conversación a medias).
+
+## Acceso (29/10/2026)
+
+- **Registros cerrados.** Nadie puede crearse una cuenta por su cuenta: la crea el servidor al cobrar, con el email ya
+  confirmado. Una prueba demostró que, con los registros abiertos, alguien podía registrar con contraseña el email de
+  una clienta antes que ella y seguir entrando con esa contraseña después.
+- Una compra solo se vincula a una cuenta con el email confirmado, y el email sale de la cuenta, no del token.
+- Hasta que esté el webhook de Stripe (fase 6), las cuentas de prueba se crean a mano con un script.
